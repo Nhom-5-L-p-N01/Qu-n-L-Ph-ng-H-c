@@ -4,8 +4,10 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.DocumentEvent;
+import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.geom.GeneralPath;
+import java.io.File;
+import java.io.IOException;
 import java.io.*;
 
 public class MainFrame extends JFrame {
@@ -19,55 +21,41 @@ public class MainFrame extends JFrame {
 
     private JLabel lblStatTotal, lblStatPending, lblStatApproved;
 
-    private static final Color COLOR_BG = new Color(12, 14, 12);
-    private static final Color COLOR_PANEL = new Color(22, 26, 22);
-    private static final Color COLOR_GREEN = new Color(0, 230, 118);
-    private static final Color COLOR_GREEN_DIM = new Color(0, 140, 70);
-    private static final Color COLOR_AMBER = new Color(235, 180, 40);
-    private static final Color COLOR_DANGER = new Color(210, 80, 80);
-    private static final Color COLOR_ROW_ALT = new Color(18, 22, 18);
+    private static final Color COLOR_ACCENT = new Color(41, 182, 246);
+    private static final Color COLOR_WHITE = Color.WHITE;
+    private static final Color COLOR_PANEL = new Color(8, 14, 28, 200);
+    private static final Color COLOR_TABLE_BG = new Color(8, 14, 28, 170);
+    private static final Color COLOR_ROW_ALT = new Color(20, 30, 50, 170);
+    private static final Color COLOR_AMBER = new Color(255, 193, 7);
+    private static final Color COLOR_DANGER = new Color(230, 90, 90);
+    private static final Color COLOR_SUCCESS = new Color(80, 220, 160);
 
     private final String[] ROOM_LIST = {"P.301", "P.302", "P.303", "P.204", "P.205", "Hội trường A"};
     private final String[] TIME_LIST = {"07:00 - 09:00", "09:00 - 11:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00"};
 
-    // Panel nền đen có vẽ họa tiết quyển sách mờ ở góc
-    static class BookBackgroundPanel extends JPanel {
-        BookBackgroundPanel(LayoutManager lm) {
+    // Panel vẽ ảnh nền thật, co giãn theo kích thước cửa sổ
+    static class ImageBackgroundPanel extends JPanel {
+        private Image bgImage;
+
+        ImageBackgroundPanel(LayoutManager lm) {
             super(lm);
             setOpaque(true);
+            try {
+                bgImage = ImageIO.read(new File("background.jpg"));
+            } catch (IOException e) {
+                bgImage = null;
+            }
         }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(COLOR_BG);
-            g2.fillRect(0, 0, getWidth(), getHeight());
-
-            int w = 160, h = 80;
-            int cx = getWidth() - w / 2 - 20;
-            int cy = h / 2 + 20;
-
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.08f));
-            g2.setColor(COLOR_GREEN);
-            g2.setStroke(new BasicStroke(2f));
-
-            GeneralPath left = new GeneralPath();
-            left.moveTo(cx, cy - h / 2);
-            left.quadTo(cx - w / 2, cy - h / 2 - 8, cx - w / 2, cy);
-            left.quadTo(cx - w / 2, cy + h / 2, cx, cy + h / 2 - 6);
-            left.closePath();
-
-            GeneralPath right = new GeneralPath();
-            right.moveTo(cx, cy - h / 2);
-            right.quadTo(cx + w / 2, cy - h / 2 - 8, cx + w / 2, cy);
-            right.quadTo(cx + w / 2, cy + h / 2, cx, cy + h / 2 - 6);
-            right.closePath();
-
-            g2.draw(left);
-            g2.draw(right);
-            g2.drawLine(cx, cy - h / 2, cx, cy + h / 2 - 6);
-            g2.dispose();
+            if (bgImage != null) {
+                g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
+            } else {
+                g.setColor(new Color(6, 10, 22));
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
         }
     }
 
@@ -87,13 +75,13 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        BookBackgroundPanel root = new BookBackgroundPanel(new BorderLayout(10, 10));
+        ImageBackgroundPanel root = new ImageBackgroundPanel(new BorderLayout(10, 10));
         setContentPane(root);
 
         // ---- Tiêu đề ----
         JLabel lblTitle = new JLabel("QUẢN LÝ ĐẶT PHÒNG HỌC", JLabel.CENTER);
-        lblTitle.setFont(new Font("Georgia", Font.BOLD, 22));
-        lblTitle.setForeground(COLOR_GREEN);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setForeground(COLOR_WHITE);
         lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
         root.add(lblTitle, BorderLayout.NORTH);
 
@@ -111,8 +99,8 @@ public class MainFrame extends JFrame {
         searchPanel.setOpaque(false);
         searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         JLabel lblSearch = new JLabel("Tìm kiếm:");
-        lblSearch.setFont(new Font("Consolas", Font.PLAIN, 13));
-        lblSearch.setForeground(COLOR_GREEN);
+        lblSearch.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lblSearch.setForeground(COLOR_WHITE);
         searchPanel.add(lblSearch, BorderLayout.WEST);
         txtSearch = styledTextField();
         searchPanel.add(txtSearch, BorderLayout.CENTER);
@@ -123,9 +111,9 @@ public class MainFrame extends JFrame {
         inputPanel.setBackground(COLOR_PANEL);
         inputPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createTitledBorder(
-                        BorderFactory.createLineBorder(COLOR_GREEN_DIM, 1),
+                        BorderFactory.createLineBorder(COLOR_ACCENT, 1),
                         "Thông tin đặt phòng",
-                        0, 0, new Font("Consolas", Font.BOLD, 13), COLOR_GREEN),
+                        0, 0, new Font("Segoe UI", Font.BOLD, 13), COLOR_ACCENT),
                 BorderFactory.createEmptyBorder(10, 15, 10, 15)));
 
         inputPanel.add(styledLabel("Phòng học:"));
@@ -150,23 +138,24 @@ public class MainFrame extends JFrame {
         tableModel = new DefaultTableModel(columnNames, 0);
         table = new JTable(tableModel);
         table.setRowHeight(28);
-        table.setFont(new Font("Consolas", Font.PLAIN, 13));
-        table.setGridColor(new Color(35, 45, 35));
-        table.setBackground(COLOR_BG);
-        table.setForeground(COLOR_GREEN);
-        table.setSelectionBackground(COLOR_GREEN_DIM);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setGridColor(new Color(60, 90, 130));
+        table.setForeground(COLOR_WHITE);
+        table.setOpaque(false);
+        table.setSelectionBackground(COLOR_ACCENT);
         table.setSelectionForeground(Color.BLACK);
-        table.getTableHeader().setFont(new Font("Consolas", Font.BOLD, 13));
-        table.getTableHeader().setBackground(COLOR_PANEL);
-        table.getTableHeader().setForeground(COLOR_GREEN);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        table.getTableHeader().setBackground(new Color(10, 20, 40));
+        table.getTableHeader().setForeground(COLOR_WHITE);
         table.setDefaultRenderer(Object.class, new StatusRowRenderer());
 
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_GREEN_DIM));
-        scrollPane.getViewport().setBackground(COLOR_BG);
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT));
         centerPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Thanh thống kê
@@ -174,9 +163,9 @@ public class MainFrame extends JFrame {
         statsPanel.setOpaque(false);
         statsPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
 
-        lblStatTotal = createStatLabel("Tổng: 0", COLOR_GREEN);
+        lblStatTotal = createStatLabel("Tổng: 0", COLOR_WHITE);
         lblStatPending = createStatLabel("Chờ duyệt: 0", COLOR_AMBER);
-        lblStatApproved = createStatLabel("Đã duyệt: 0", COLOR_GREEN);
+        lblStatApproved = createStatLabel("Đã duyệt: 0", COLOR_SUCCESS);
 
         statsPanel.add(lblStatTotal);
         statsPanel.add(lblStatPending);
@@ -190,10 +179,10 @@ public class MainFrame extends JFrame {
         buttonPanel.setOpaque(false);
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
 
-        JButton btnAdd = createStyledButton("Gửi Đặt Phòng", COLOR_GREEN);
+        JButton btnAdd = createStyledButton("Gửi Đặt Phòng", COLOR_ACCENT);
         JButton btnDelete = createStyledButton("Hủy Lịch", COLOR_DANGER);
-        JButton btnApprove = createStyledButton("Duyệt Phòng (Admin)", COLOR_GREEN);
-        JButton btnLogout = createStyledButton("Đăng Xuất", COLOR_GREEN_DIM);
+        JButton btnApprove = createStyledButton("Duyệt Phòng (Admin)", COLOR_SUCCESS);
+        JButton btnLogout = createStyledButton("Đăng Xuất", new Color(100, 110, 130));
 
         buttonPanel.add(btnAdd);
         buttonPanel.add(btnDelete);
@@ -298,50 +287,48 @@ public class MainFrame extends JFrame {
 
     private JLabel styledLabel(String text) {
         JLabel lbl = new JLabel(text);
-        lbl.setFont(new Font("Consolas", Font.PLAIN, 13));
-        lbl.setForeground(COLOR_GREEN);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lbl.setForeground(COLOR_ACCENT);
         return lbl;
     }
 
     private JLabel createStatLabel(String text, Color color) {
         JLabel lbl = new JLabel(text, JLabel.CENTER);
-        lbl.setFont(new Font("Consolas", Font.BOLD, 13));
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
         lbl.setForeground(color);
         lbl.setOpaque(true);
         lbl.setBackground(COLOR_PANEL);
         lbl.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_GREEN_DIM),
+                BorderFactory.createLineBorder(COLOR_ACCENT),
                 BorderFactory.createEmptyBorder(6, 10, 6, 10)));
         return lbl;
     }
 
     private JTextField styledTextField() {
         JTextField tf = new JTextField();
-        tf.setFont(new Font("Consolas", Font.PLAIN, 13));
-        tf.setBackground(COLOR_PANEL);
-        tf.setForeground(COLOR_GREEN);
-        tf.setCaretColor(COLOR_GREEN);
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tf.setBackground(new Color(255, 255, 255, 230));
+        tf.setForeground(new Color(10, 20, 40));
+        tf.setCaretColor(COLOR_ACCENT);
         tf.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_GREEN_DIM, 1),
+                BorderFactory.createLineBorder(COLOR_ACCENT, 1),
                 BorderFactory.createEmptyBorder(4, 6, 4, 6)));
         return tf;
     }
 
     private void styleCombo(JComboBox<String> combo) {
-        combo.setFont(new Font("Consolas", Font.PLAIN, 13));
-        combo.setBackground(COLOR_PANEL);
-        combo.setForeground(COLOR_GREEN);
+        combo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        combo.setBackground(new Color(255, 255, 255, 230));
+        combo.setForeground(new Color(10, 20, 40));
     }
 
-    private JButton createStyledButton(String text, Color accent) {
+    private JButton createStyledButton(String text, Color bgColor) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("Consolas", Font.BOLD, 13));
-        btn.setForeground(accent);
-        btn.setBackground(COLOR_PANEL);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setForeground(COLOR_WHITE);
+        btn.setBackground(bgColor);
         btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(accent, 1),
-                BorderFactory.createEmptyBorder(8, 16, 8, 16)));
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
     }
@@ -353,13 +340,13 @@ public class MainFrame extends JFrame {
             Component c = super.getTableCellRendererComponent(tbl, value, isSelected, hasFocus, row, column);
 
             if (!isSelected) {
-                c.setBackground(row % 2 == 0 ? COLOR_BG : COLOR_ROW_ALT);
-                c.setForeground(COLOR_GREEN);
+                c.setBackground(row % 2 == 0 ? COLOR_TABLE_BG : COLOR_ROW_ALT);
+                c.setForeground(COLOR_WHITE);
 
                 if (column == 3 && value != null) {
                     String status = value.toString();
                     if (status.equals("Đã duyệt")) {
-                        c.setForeground(COLOR_GREEN);
+                        c.setForeground(COLOR_SUCCESS);
                         setFont(getFont().deriveFont(Font.BOLD));
                     } else if (status.equals("Chờ duyệt")) {
                         c.setForeground(COLOR_AMBER);
@@ -371,6 +358,7 @@ public class MainFrame extends JFrame {
                     setFont(getFont().deriveFont(Font.PLAIN));
                 }
             }
+            ((JComponent) c).setOpaque(true);
             return c;
         }
     }

@@ -1,6 +1,6 @@
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
@@ -12,75 +12,108 @@ public class MainFrame extends JFrame {
     private final String FILE_PATH = "data_booking.txt";
     private boolean isAdmin = false;
 
-    // Constructor nhận vào trạng thái có phải Admin không (gửi từ LoginFrame sang)
+    // Bảng màu chủ đạo
+    private final Color COLOR_PRIMARY = new Color(41, 98, 255);
+    private final Color COLOR_ADMIN = new Color(220, 60, 60);
+    private final Color COLOR_BG = new Color(245, 247, 252);
+    private final Color COLOR_SUCCESS = new Color(46, 160, 90);
+    private final Color COLOR_WARNING = new Color(235, 150, 30);
+    private final Color COLOR_ROW_ALT = new Color(232, 238, 250);
+
     public MainFrame(boolean isAdmin) {
         this.isAdmin = isAdmin;
         initUI();
-        loadDataFromFile(); // Tự động đọc dữ liệu cũ từ file lên bảng khi mở màn hình
+        loadDataFromFile();
     }
 
-    // Constructor mặc định (chạy test độc lập)
     public MainFrame() {
         this(false);
     }
 
     private void initUI() {
+        Color themeColor = isAdmin ? COLOR_ADMIN : COLOR_PRIMARY;
+
         setTitle("HỆ THỐNG QUẢN LÝ ĐẶT PHÒNG HỌC - " + (isAdmin ? "QUYỀN ADMIN" : "QUYỀN USER"));
-        setSize(750, 520);
+        setSize(800, 560);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
+        getContentPane().setBackground(COLOR_BG);
 
-        // 1. Tiêu đề màn hình
-        JLabel lblTitle = new JLabel("QUẢN LÝ ĐẶT PHÒNG HỌC", JLabel.CENTER);
-        lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
-        lblTitle.setForeground(isAdmin ? Color.RED : Color.BLUE);
+        // ---- Tiêu đề ----
+        String icon = isAdmin ? "🛡️" : "🎓";
+        JLabel lblTitle = new JLabel(icon + "  QUẢN LÝ ĐẶT PHÒNG HỌC", JLabel.CENTER);
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setForeground(themeColor);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
+        lblTitle.setOpaque(true);
+        lblTitle.setBackground(COLOR_BG);
         add(lblTitle, BorderLayout.NORTH);
 
-        // 2. Form nhập liệu
+        // ---- Form nhập liệu ----
         JPanel inputPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-        inputPanel.setBorder(BorderFactory.createTitledBorder("Thông tin đặt phòng"));
+        inputPanel.setBackground(Color.WHITE);
+        inputPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder(
+                        BorderFactory.createLineBorder(themeColor, 1),
+                        "📝 Thông tin đặt phòng",
+                        0, 0, new Font("Segoe UI", Font.BOLD, 13), themeColor),
+                BorderFactory.createEmptyBorder(10, 15, 10, 15)));
 
-        inputPanel.add(new JLabel("Tên phòng học:"));
-        txtRoomName = new JTextField();
+        inputPanel.add(styledLabel("🏫 Tên phòng học:"));
+        txtRoomName = styledTextField();
         inputPanel.add(txtRoomName);
 
-        inputPanel.add(new JLabel("Người đặt:"));
-        txtUser = new JTextField();
+        inputPanel.add(styledLabel("👤 Người đặt:"));
+        txtUser = styledTextField();
         inputPanel.add(txtUser);
 
-        inputPanel.add(new JLabel("Thời gian (VD: 08:00 - 10:00):"));
-        txtTime = new JTextField();
+        inputPanel.add(styledLabel("⏰ Thời gian (VD: 08:00 - 10:00):"));
+        txtTime = styledTextField();
         inputPanel.add(txtTime);
 
-        // 3. Bảng dữ liệu
+        // ---- Bảng dữ liệu ----
         String[] columnNames = {"Tên Phòng", "Người Đặt", "Thời Gian", "Trạng Thái"};
         tableModel = new DefaultTableModel(columnNames, 0);
         table = new JTable(tableModel);
+        table.setRowHeight(28);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setGridColor(new Color(220, 224, 235));
+        table.setSelectionBackground(themeColor);
+        table.setSelectionForeground(Color.WHITE);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
+        table.getTableHeader().setBackground(themeColor);
+        table.getTableHeader().setForeground(Color.WHITE);
+        table.setDefaultRenderer(Object.class, new StatusRowRenderer());
 
         JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.setBackground(COLOR_BG);
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
         centerPanel.add(inputPanel, BorderLayout.NORTH);
-        centerPanel.add(new JScrollPane(table), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 224, 235)));
+        centerPanel.add(scrollPane, BorderLayout.CENTER);
         add(centerPanel, BorderLayout.CENTER);
 
-        // 4. Thanh nút bấm
+        // ---- Thanh nút bấm ----
         JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton btnAdd = new JButton("Gửi Đặt Phòng");
-        JButton btnDelete = new JButton("Hủy Lịch");
-        JButton btnApprove = new JButton("Duyệt Phòng (Admin)");
+        buttonPanel.setBackground(COLOR_BG);
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+
+        JButton btnAdd = createStyledButton("📤 Gửi Đặt Phòng", COLOR_PRIMARY);
+        JButton btnDelete = createStyledButton("🗑️ Hủy Lịch", COLOR_ADMIN);
+        JButton btnApprove = createStyledButton("✅ Duyệt Phòng (Admin)", COLOR_SUCCESS);
 
         buttonPanel.add(btnAdd);
         buttonPanel.add(btnDelete);
-        
-        // Chỉ hiện nút Duyệt nếu đăng nhập bằng tài khoản Admin
+
         if (isAdmin) {
             buttonPanel.add(btnApprove);
         }
         add(buttonPanel, BorderLayout.SOUTH);
 
-        // --- XỬ LÝ SỰ KIỆN ---
+        // --- XỬ LÝ SỰ KIỆN (giữ nguyên logic gốc) ---
 
-        // Nút Thêm (Gửi Đặt Phòng)
         btnAdd.addActionListener(e -> {
             String room = txtRoomName.getText().trim();
             String user = txtUser.getText().trim();
@@ -90,7 +123,7 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ thông tin!");
             } else {
                 tableModel.addRow(new Object[]{room, user, time, "Chờ duyệt"});
-                saveDataToFile(); // Lưu ngay dòng mới vào file
+                saveDataToFile();
                 txtRoomName.setText("");
                 txtUser.setText("");
                 txtTime.setText("");
@@ -98,24 +131,22 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // Nút Hủy Lịch
         btnDelete.addActionListener(e -> {
             int selectedRow = table.getSelectedRow();
             if (selectedRow >= 0) {
                 tableModel.removeRow(selectedRow);
-                saveDataToFile(); // Cập nhật lại file sau khi xóa
+                saveDataToFile();
                 JOptionPane.showMessageDialog(this, "Đã hủy lịch thành công!");
             } else {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 dòng trong bảng để hủy!");
             }
         });
 
-        // Nút Duyệt Phòng (Dành cho Admin)
         btnApprove.addActionListener(e -> {
             int selectedRow = table.getSelectedRow();
             if (selectedRow >= 0) {
                 tableModel.setValueAt("Đã duyệt", selectedRow, 3);
-                saveDataToFile(); // Cập nhật lại file sau khi duyệt
+                saveDataToFile();
                 JOptionPane.showMessageDialog(this, "Đã duyệt lịch đặt phòng thành công!");
             } else {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 lịch trong bảng để duyệt!");
@@ -123,7 +154,65 @@ public class MainFrame extends JFrame {
         });
     }
 
-    // [PHẦN 2] Hàm lưu dữ liệu bảng vào file text
+    // ---- Các hàm tiện ích tạo giao diện ----
+
+    private JLabel styledLabel(String text) {
+        JLabel lbl = new JLabel(text);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        return lbl;
+    }
+
+    private JTextField styledTextField() {
+        JTextField tf = new JTextField();
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tf.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 205, 220), 1),
+                BorderFactory.createEmptyBorder(4, 6, 4, 6)));
+        return tf;
+    }
+
+    private JButton createStyledButton(String text, Color bgColor) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setForeground(Color.WHITE);
+        btn.setBackground(bgColor);
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(8, 16, 8, 16));
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
+
+    // Tô màu xen kẽ dòng + tô màu theo trạng thái ở cột cuối
+    private class StatusRowRenderer extends DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected,
+                                                         boolean hasFocus, int row, int column) {
+            Component c = super.getTableCellRendererComponent(tbl, value, isSelected, hasFocus, row, column);
+
+            if (!isSelected) {
+                c.setBackground(row % 2 == 0 ? Color.WHITE : COLOR_ROW_ALT);
+                c.setForeground(Color.BLACK);
+
+                if (column == 3 && value != null) {
+                    String status = value.toString();
+                    if (status.equals("Đã duyệt")) {
+                        c.setForeground(COLOR_SUCCESS);
+                        setFont(getFont().deriveFont(Font.BOLD));
+                    } else if (status.equals("Chờ duyệt")) {
+                        c.setForeground(COLOR_WARNING);
+                        setFont(getFont().deriveFont(Font.BOLD));
+                    } else {
+                        setFont(getFont().deriveFont(Font.PLAIN));
+                    }
+                } else {
+                    setFont(getFont().deriveFont(Font.PLAIN));
+                }
+            }
+            return c;
+        }
+    }
+
+    // [PHẦN 2] Hàm lưu dữ liệu bảng vào file text (giữ nguyên gốc)
     private void saveDataToFile() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
@@ -139,14 +228,14 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // [PHẦN 2] Hàm đọc dữ liệu từ file text hiển thị lên bảng
+    // [PHẦN 2] Hàm đọc dữ liệu từ file text hiển thị lên bảng (giữ nguyên gốc)
     private void loadDataFromFile() {
         File file = new File(FILE_PATH);
         if (!file.exists()) return;
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String line;
-            tableModel.setRowCount(0); // Làm sạch bảng trước khi nạp
+            tableModel.setRowCount(0);
             while ((line = br.readLine()) != null) {
                 String[] data = line.split(",");
                 if (data.length == 4) {
@@ -162,3 +251,5 @@ public class MainFrame extends JFrame {
         SwingUtilities.invokeLater(() -> new MainFrame(true).setVisible(true));
     }
 }
+ 
+ 

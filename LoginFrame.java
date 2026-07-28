@@ -2,72 +2,114 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.geom.GeneralPath;
 
 public class LoginFrame extends JFrame {
     private JTextField txtUsername;
     private JPasswordField txtPassword;
 
-    // Bảng màu chủ đạo
-    private final Color COLOR_PRIMARY = new Color(41, 98, 255);
-    private final Color COLOR_PRIMARY_DARK = new Color(25, 70, 190);
-    private final Color COLOR_BG = new Color(240, 244, 255);
-    private final Color COLOR_DANGER = new Color(220, 60, 60);
+    private static final Color COLOR_BG = new Color(12, 14, 12);
+    private static final Color COLOR_GREEN = new Color(0, 230, 118);
+    private static final Color COLOR_GREEN_DIM = new Color(0, 140, 70);
+    private static final Color COLOR_PANEL = new Color(22, 26, 22);
+    private static final Color COLOR_DANGER = new Color(200, 70, 70);
+
+    // Panel nền đen có vẽ họa tiết quyển sách mở bằng code
+    static class BookBackgroundPanel extends JPanel {
+        BookBackgroundPanel(LayoutManager lm) {
+            super(lm);
+            setOpaque(true);
+        }
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(COLOR_BG);
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            // Vẽ quyển sách mở mờ ở giữa làm họa tiết trang trí
+            int cx = getWidth() / 2;
+            int cy = getHeight() / 2;
+            int w = Math.min(getWidth(), 300);
+            int h = w / 2;
+
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.10f));
+            g2.setColor(COLOR_GREEN);
+            g2.setStroke(new BasicStroke(2f));
+
+            GeneralPath left = new GeneralPath();
+            left.moveTo(cx, cy - h / 2);
+            left.quadTo(cx - w / 2, cy - h / 2 - 15, cx - w / 2, cy);
+            left.quadTo(cx - w / 2, cy + h / 2, cx, cy + h / 2 - 10);
+            left.closePath();
+
+            GeneralPath right = new GeneralPath();
+            right.moveTo(cx, cy - h / 2);
+            right.quadTo(cx + w / 2, cy - h / 2 - 15, cx + w / 2, cy);
+            right.quadTo(cx + w / 2, cy + h / 2, cx, cy + h / 2 - 10);
+            right.closePath();
+
+            g2.draw(left);
+            g2.draw(right);
+            g2.drawLine(cx, cy - h / 2, cx, cy + h / 2 - 10);
+
+            g2.dispose();
+        }
+    }
 
     public LoginFrame() {
         setTitle("ĐĂNG NHẬP HỆ THỐNG QUẢN LÝ PHÒNG HỌC");
         setSize(420, 320);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-        setLayout(new BorderLayout(10, 10));
-        getContentPane().setBackground(COLOR_BG);
+
+        BookBackgroundPanel root = new BookBackgroundPanel(new BorderLayout(10, 10));
+        setContentPane(root);
 
         // ---- Tiêu đề ----
-        JLabel lblTitle = new JLabel("🔐  ĐĂNG NHẬP HỆ THỐNG", JLabel.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitle.setForeground(COLOR_PRIMARY_DARK);
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(20, 10, 10, 10));
-        add(lblTitle, BorderLayout.NORTH);
+        JLabel lblTitle = new JLabel("ĐĂNG NHẬP HỆ THỐNG", JLabel.CENTER);
+        lblTitle.setFont(new Font("Georgia", Font.BOLD, 20));
+        lblTitle.setForeground(COLOR_GREEN);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(24, 10, 10, 10));
+        root.add(lblTitle, BorderLayout.NORTH);
 
         // ---- Form nhập ----
         JPanel panelForm = new JPanel(new GridLayout(2, 2, 12, 15));
-        panelForm.setBackground(COLOR_BG);
+        panelForm.setOpaque(false);
         panelForm.setBorder(BorderFactory.createEmptyBorder(15, 35, 15, 35));
 
-        JLabel lblUser = new JLabel("👤 Tài khoản:");
-        lblUser.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        JLabel lblUser = new JLabel("Tài khoản:");
+        lblUser.setFont(new Font("Consolas", Font.PLAIN, 14));
+        lblUser.setForeground(COLOR_GREEN);
         panelForm.add(lblUser);
 
         txtUsername = new JTextField();
-        txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtUsername.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_PRIMARY, 1),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        styleField(txtUsername);
         panelForm.add(txtUsername);
 
-        JLabel lblPass = new JLabel("🔑 Mật khẩu:");
-        lblPass.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        JLabel lblPass = new JLabel("Mật khẩu:");
+        lblPass.setFont(new Font("Consolas", Font.PLAIN, 14));
+        lblPass.setForeground(COLOR_GREEN);
         panelForm.add(lblPass);
 
         txtPassword = new JPasswordField();
-        txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        txtPassword.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_PRIMARY, 1),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        styleField(txtPassword);
         panelForm.add(txtPassword);
 
-        add(panelForm, BorderLayout.CENTER);
+        root.add(panelForm, BorderLayout.CENTER);
 
         // ---- Nút bấm ----
         JPanel panelButton = new JPanel();
-        panelButton.setBackground(COLOR_BG);
-        panelButton.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        panelButton.setOpaque(false);
+        panelButton.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
 
-        JButton btnLogin = createStyledButton("➜ Đăng nhập", COLOR_PRIMARY);
-        JButton btnExit = createStyledButton("✕ Thoát", COLOR_DANGER);
+        JButton btnLogin = createStyledButton("Đăng nhập", COLOR_GREEN);
+        JButton btnExit = createStyledButton("Thoát", COLOR_DANGER);
 
         panelButton.add(btnLogin);
         panelButton.add(btnExit);
-        add(panelButton, BorderLayout.SOUTH);
+        root.add(panelButton, BorderLayout.SOUTH);
 
         // --- Xử lý sự kiện ---
         btnLogin.addActionListener(new ActionListener() {
@@ -96,14 +138,25 @@ public class LoginFrame extends JFrame {
         btnExit.addActionListener(e -> System.exit(0));
     }
 
-    // Tạo nút bấm có màu nền, chữ trắng, bo góc nhẹ
-    private JButton createStyledButton(String text, Color bgColor) {
+    private void styleField(JTextField field) {
+        field.setFont(new Font("Consolas", Font.PLAIN, 14));
+        field.setBackground(COLOR_PANEL);
+        field.setForeground(COLOR_GREEN);
+        field.setCaretColor(COLOR_GREEN);
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(COLOR_GREEN_DIM, 1),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+    }
+
+    private JButton createStyledButton(String text, Color accent) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btn.setForeground(Color.WHITE);
-        btn.setBackground(bgColor);
+        btn.setFont(new Font("Consolas", Font.BOLD, 13));
+        btn.setForeground(accent);
+        btn.setBackground(COLOR_PANEL);
         btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(accent, 1),
+                BorderFactory.createEmptyBorder(8, 20, 8, 20)));
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
     }

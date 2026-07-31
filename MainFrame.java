@@ -37,7 +37,6 @@ public class MainFrame extends JFrame {
     private static final Color COLOR_SUCCESS = new Color(80, 220, 160);
     private static final Color COLOR_INFO = new Color(140, 160, 255);
 
-    // Danh sach phong theo hang - moi hang co gia va mo ta rieng
     private final String[] ROOM_LIST = {
             "P.101 (Thường)", "P.102 (Thường)",
             "P.201 (Sáng tạo)", "P.202 (Sáng tạo)",
@@ -48,7 +47,6 @@ public class MainFrame extends JFrame {
 
     private final String[] TIME_LIST = {"07:00 - 09:00", "09:00 - 11:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00"};
 
-    // Phi muon phong theo tung phong cu the
     private final Map<String, Integer> ROOM_FEE = new LinkedHashMap<String, Integer>() {{
         put("P.101 (Thường)", 30000);
         put("P.102 (Thường)", 30000);
@@ -60,7 +58,6 @@ public class MainFrame extends JFrame {
         put("Hội trường A", 150000);
     }};
 
-    // Mo ta hang phong - hien thi cho nguoi dung biet dang chon loai phong nao
     private final Map<String, String> ROOM_DESC = new LinkedHashMap<String, String>() {{
         put("P.101 (Thường)", "Bàn ghế cơ bản, có máy chiếu, phù hợp học tập thông thường");
         put("P.102 (Thường)", "Bàn ghế cơ bản, có máy chiếu, phù hợp học tập thông thường");
@@ -76,7 +73,7 @@ public class MainFrame extends JFrame {
     private static final String TT_DA_DUYET = "Đã duyệt";
     private static final String TT_DA_CHECKIN = "Đã check-in";
 
-    // Panel vẽ ảnh nền thật, co giãn theo kích thước cửa sổ
+    // Panel vẽ ảnh nền thật, co giãn theo kích thước cửa sổ + phủ mờ đen để bảng/chữ dễ đọc
     static class ImageBackgroundPanel extends JPanel {
         private Image bgImage;
 
@@ -95,6 +92,9 @@ public class MainFrame extends JFrame {
             super.paintComponent(g);
             if (bgImage != null) {
                 g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
+                // Lớp phủ đen mờ giúp bảng dữ liệu và chữ dễ đọc hơn trên ảnh nền
+                g.setColor(new Color(0, 0, 0, 130));
+                g.fillRect(0, 0, getWidth(), getHeight());
             } else {
                 g.setColor(new Color(6, 10, 22));
                 g.fillRect(0, 0, getWidth(), getHeight());
@@ -121,14 +121,12 @@ public class MainFrame extends JFrame {
         ImageBackgroundPanel root = new ImageBackgroundPanel(new BorderLayout(10, 10));
         setContentPane(root);
 
-        // ---- Tiêu đề ----
         JLabel lblTitle = new JLabel("QUẢN LÝ ĐẶT PHÒNG HỌC", JLabel.CENTER);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
         lblTitle.setForeground(COLOR_WHITE);
         lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
         root.add(lblTitle, BorderLayout.NORTH);
 
-        // ---- Panel giữa ----
         JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
         centerPanel.setOpaque(false);
         centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
@@ -137,7 +135,6 @@ public class MainFrame extends JFrame {
         topArea.setLayout(new BoxLayout(topArea, BoxLayout.Y_AXIS));
         topArea.setOpaque(false);
 
-        // Thanh tìm kiếm
         JPanel searchPanel = new JPanel(new BorderLayout(8, 0));
         searchPanel.setOpaque(false);
         searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
@@ -149,7 +146,6 @@ public class MainFrame extends JFrame {
         searchPanel.add(txtSearch, BorderLayout.CENTER);
         topArea.add(searchPanel);
 
-        // Form nhập liệu
         JPanel inputPanel = new JPanel(new GridLayout(4, 2, 10, 10));
         inputPanel.setBackground(COLOR_PANEL);
         inputPanel.setBorder(BorderFactory.createCompoundBorder(
@@ -180,7 +176,6 @@ public class MainFrame extends JFrame {
 
         topArea.add(inputPanel);
 
-        // Mo ta hang phong + gia - cap nhat khi doi lua chon phong
         lblMoTaPhong = new JLabel(" ");
         lblMoTaPhong.setFont(new Font("Segoe UI", Font.ITALIC, 12));
         lblMoTaPhong.setForeground(COLOR_ACCENT);
@@ -189,7 +184,6 @@ public class MainFrame extends JFrame {
 
         centerPanel.add(topArea, BorderLayout.NORTH);
 
-        // Bảng dữ liệu
         String[] columnNames = {"Tên Phòng", "Người Đặt", "Thời Gian", "Phí", "Trạng Thái"};
         tableModel = new DefaultTableModel(columnNames, 0);
         table = new JTable(tableModel);
@@ -214,7 +208,6 @@ public class MainFrame extends JFrame {
         scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT));
         centerPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Thanh thống kê nhanh
         JPanel statsPanel = new JPanel(new GridLayout(1, 4, 10, 0));
         statsPanel.setOpaque(false);
         statsPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
@@ -232,7 +225,6 @@ public class MainFrame extends JFrame {
 
         root.add(centerPanel, BorderLayout.CENTER);
 
-        // ---- Thanh nút bấm (2 hàng cho gọn) ----
         JPanel buttonWrap = new JPanel();
         buttonWrap.setLayout(new BoxLayout(buttonWrap, BoxLayout.Y_AXIS));
         buttonWrap.setOpaque(false);
@@ -270,8 +262,6 @@ public class MainFrame extends JFrame {
         buttonWrap.add(buttonPanelRow2);
         root.add(buttonWrap, BorderLayout.SOUTH);
 
-        // --- XỬ LÝ SỰ KIỆN ---
-
         btnAdd.addActionListener(e -> onDatPhong());
         btnDelete.addActionListener(e -> onHuyLich());
         btnApprove.addActionListener(e -> onDuyet());
@@ -297,11 +287,9 @@ public class MainFrame extends JFrame {
             public void changedUpdate(DocumentEvent e) { filterTable(); }
         });
 
-        // Hien thi mo ta + gia cua phong dau tien ngay khi mo giao dien
         capNhatMoTaPhong();
     }
 
-    // Cap nhat dong mo ta + gia theo phong dang duoc chon trong combo box
     private void capNhatMoTaPhong() {
         String room = (String) cbRoom.getSelectedItem();
         int phi = ROOM_FEE.getOrDefault(room, 0);
@@ -309,7 +297,6 @@ public class MainFrame extends JFrame {
         lblMoTaPhong.setText("<html>" + moTa + " — <b>Giá: " + formatTien(phi) + "đ</b></html>");
     }
 
-    // ============ TÍNH NĂNG: ĐẶT PHÒNG (có áp dụng voucher nếu có) ============
     private void onDatPhong() {
         String room = (String) cbRoom.getSelectedItem();
         String user = txtUser.getText().trim();
@@ -386,7 +373,6 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // ============ TÍNH NĂNG: CHECK-IN ============
     private void onCheckIn() {
         int viewRow = table.getSelectedRow();
         if (viewRow < 0) {
@@ -421,7 +407,6 @@ public class MainFrame extends JFrame {
                 "Check-in thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ============ TÍNH NĂNG: ĐỔI ĐIỂM LẤY VOUCHER ============
     private void onDoiVoucher() {
         String tenMacDinh = txtUser.getText().trim();
         String ten = JOptionPane.showInputDialog(this,
@@ -498,7 +483,6 @@ public class MainFrame extends JFrame {
         JOptionPane.showMessageDialog(this, new JScrollPane(area), "Điểm & Voucher của bạn", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ============ TÍNH NĂNG: THỐNG KÊ CHO ADMIN ============
     private void onThongKe() {
         if (!isAdmin) {
             JOptionPane.showMessageDialog(this, "Chỉ Admin mới xem được thống kê!", "Không có quyền", JOptionPane.WARNING_MESSAGE);
@@ -583,8 +567,6 @@ public class MainFrame extends JFrame {
         lblStatApproved.setText("Đã duyệt: " + approved);
         lblStatDone.setText("Đã check-in: " + done);
     }
-
-    // ---- Các hàm tiện ích tạo giao diện ----
 
     private JLabel styledLabel(String text) {
         JLabel lbl = new JLabel(text);

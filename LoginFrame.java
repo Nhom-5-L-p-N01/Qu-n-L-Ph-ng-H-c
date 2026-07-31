@@ -15,7 +15,7 @@ public class LoginFrame extends JFrame {
     private static final Color COLOR_PANEL = new Color(8, 14, 28, 200);
     private static final Color COLOR_DANGER = new Color(230, 90, 90);
 
-    // Panel vẽ ảnh nền thật, co giãn theo kích thước cửa sổ
+    // Panel vẽ ảnh nền thật, co giãn theo kích thước cửa sổ + phủ mờ đen để chữ dễ đọc
     static class ImageBackgroundPanel extends JPanel {
         private Image bgImage;
 
@@ -34,6 +34,9 @@ public class LoginFrame extends JFrame {
             super.paintComponent(g);
             if (bgImage != null) {
                 g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
+                // Lớp phủ đen mờ giúp chữ trắng nổi bật, dễ đọc hơn trên ảnh nền
+                g.setColor(new Color(0, 0, 0, 115));
+                g.fillRect(0, 0, getWidth(), getHeight());
             } else {
                 g.setColor(new Color(6, 10, 22));
                 g.fillRect(0, 0, getWidth(), getHeight());

@@ -10,6 +10,8 @@ public class LoginFrame extends JFrame {
     private JTextField txtUsername;
     private JPasswordField txtPassword;
 
+    private final AccountRepository accountRepository = new AccountRepository();
+
     private static final Color COLOR_ACCENT = new Color(41, 182, 246);
     private static final Color COLOR_WHITE = Color.WHITE;
     private static final Color COLOR_PANEL = new Color(8, 14, 28, 200);
@@ -44,7 +46,7 @@ public class LoginFrame extends JFrame {
 
     public LoginFrame() {
         setTitle("ĐĂNG NHẬP HỆ THỐNG QUẢN LÝ PHÒNG HỌC");
-        setSize(420, 320);
+        setSize(420, 360);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -66,7 +68,7 @@ public class LoginFrame extends JFrame {
                 BorderFactory.createLineBorder(COLOR_ACCENT, 1),
                 BorderFactory.createEmptyBorder(15, 20, 15, 20)));
 
-        JLabel lblUser = new JLabel("Tài khoản:");
+        JLabel lblUser = new JLabel("Tài khoản/Email:");
         lblUser.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         lblUser.setForeground(COLOR_ACCENT);
         panelForm.add(lblUser);
@@ -87,16 +89,39 @@ public class LoginFrame extends JFrame {
         formWrapper.add(panelForm);
         root.add(formWrapper, BorderLayout.CENTER);
 
+        JPanel panelSouth = new JPanel();
+        panelSouth.setOpaque(false);
+        panelSouth.setLayout(new BoxLayout(panelSouth, BoxLayout.Y_AXIS));
+        panelSouth.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+
         JPanel panelButton = new JPanel();
         panelButton.setOpaque(false);
-        panelButton.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
+        panelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JButton btnLogin = createStyledButton("Đăng nhập", COLOR_ACCENT);
         JButton btnExit = createStyledButton("Thoát", COLOR_DANGER);
 
         panelButton.add(btnLogin);
         panelButton.add(btnExit);
-        root.add(panelButton, BorderLayout.SOUTH);
+
+        JButton btnRegisterLink = new JButton("Quý khách chưa có tài khoản? Đăng ký tài khoản");
+        btnRegisterLink.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnRegisterLink.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnRegisterLink.setForeground(COLOR_ACCENT);
+        btnRegisterLink.setBorderPainted(false);
+        btnRegisterLink.setContentAreaFilled(false);
+        btnRegisterLink.setFocusPainted(false);
+        btnRegisterLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        panelSouth.add(panelButton);
+        panelSouth.add(Box.createVerticalStrut(8));
+        panelSouth.add(btnRegisterLink);
+        root.add(panelSouth, BorderLayout.SOUTH);
+
+        btnRegisterLink.addActionListener(e -> {
+            new RegisterFrame().setVisible(true);
+            dispose();
+        });
 
         btnLogin.addActionListener(new ActionListener() {
             @Override
@@ -113,10 +138,18 @@ public class LoginFrame extends JFrame {
                     new MainFrame(false).setVisible(true);
                     dispose();
                 } else {
-                    JOptionPane.showMessageDialog(LoginFrame.this,
-                            "Tài khoản hoặc mật khẩu không đúng!\n\nGợi ý đăng nhập:\n- Quyền Admin: admin / 123\n- Quyền User: user / 123",
-                            "Lỗi Đăng Nhập",
-                            JOptionPane.ERROR_MESSAGE);
+                    Account acc = accountRepository.dangNhap(user, pass);
+                    if (acc != null) {
+                        JOptionPane.showMessageDialog(LoginFrame.this,
+                                "Xin chào " + acc.getHoTen() + "! Đăng nhập thành công.");
+                        new MainFrame(false).setVisible(true);
+                        dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(LoginFrame.this,
+                                "Tài khoản hoặc mật khẩu không đúng!\n\nGợi ý đăng nhập:\n- Quyền Admin: admin / 123\n- Quyền User: user / 123\n- Hoặc đăng nhập bằng email đã đăng ký",
+                                "Lỗi Đăng Nhập",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         });

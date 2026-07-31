@@ -22,6 +22,7 @@ public class MainFrame extends JFrame {
     private boolean isAdmin = false;
 
     private JLabel lblStatTotal, lblStatPending, lblStatApproved, lblStatDone;
+    private JLabel lblMoTaPhong;
 
     private final PointsManager pointsManager = new PointsManager();
     private final VoucherManager voucherManager = new VoucherManager();
@@ -36,17 +37,39 @@ public class MainFrame extends JFrame {
     private static final Color COLOR_SUCCESS = new Color(80, 220, 160);
     private static final Color COLOR_INFO = new Color(140, 160, 255);
 
-    private final String[] ROOM_LIST = {"P.301", "P.302", "P.303", "P.204", "P.205", "Hội trường A"};
+    // Danh sach phong theo hang - moi hang co gia va mo ta rieng
+    private final String[] ROOM_LIST = {
+            "P.101 (Thường)", "P.102 (Thường)",
+            "P.201 (Sáng tạo)", "P.202 (Sáng tạo)",
+            "P.301 (Công nghệ)",
+            "P.401 (Nhóm nhỏ)", "P.402 (Nhóm nhỏ)",
+            "Hội trường A"
+    };
+
     private final String[] TIME_LIST = {"07:00 - 09:00", "09:00 - 11:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00"};
 
-    // Phí mượn phòng theo loại phòng - phòng thường / phòng máy chiếu / hội trường
+    // Phi muon phong theo tung phong cu the
     private final Map<String, Integer> ROOM_FEE = new LinkedHashMap<String, Integer>() {{
-        put("P.301", 50000);
-        put("P.302", 50000);
-        put("P.303", 50000);
-        put("P.204", 80000);
-        put("P.205", 80000);
+        put("P.101 (Thường)", 30000);
+        put("P.102 (Thường)", 30000);
+        put("P.201 (Sáng tạo)", 60000);
+        put("P.202 (Sáng tạo)", 60000);
+        put("P.301 (Công nghệ)", 100000);
+        put("P.401 (Nhóm nhỏ)", 50000);
+        put("P.402 (Nhóm nhỏ)", 50000);
         put("Hội trường A", 150000);
+    }};
+
+    // Mo ta hang phong - hien thi cho nguoi dung biet dang chon loai phong nao
+    private final Map<String, String> ROOM_DESC = new LinkedHashMap<String, String>() {{
+        put("P.101 (Thường)", "Bàn ghế cơ bản, có máy chiếu, phù hợp học tập thông thường");
+        put("P.102 (Thường)", "Bàn ghế cơ bản, có máy chiếu, phù hợp học tập thông thường");
+        put("P.201 (Sáng tạo)", "Ghế linh hoạt nhiều màu, không gian mở, phù hợp thảo luận sáng tạo");
+        put("P.202 (Sáng tạo)", "Ghế linh hoạt nhiều màu, không gian mở, phù hợp thảo luận sáng tạo");
+        put("P.301 (Công nghệ)", "Bàn có bánh xe, ổ điện tích hợp, màn hình tương tác");
+        put("P.401 (Nhóm nhỏ)", "Bàn tròn/vuông cỡ nhỏ, phù hợp làm việc nhóm 4-6 người");
+        put("P.402 (Nhóm nhỏ)", "Bàn tròn/vuông cỡ nhỏ, phù hợp làm việc nhóm 4-6 người");
+        put("Hội trường A", "Sức chứa lớn, dùng cho hội thảo, thuyết trình, sự kiện");
     }};
 
     private static final String TT_CHO_DUYET = "Chờ duyệt";
@@ -139,6 +162,7 @@ public class MainFrame extends JFrame {
         inputPanel.add(styledLabel("Phòng học:"));
         cbRoom = new JComboBox<>(ROOM_LIST);
         styleCombo(cbRoom);
+        cbRoom.addActionListener(e -> capNhatMoTaPhong());
         inputPanel.add(cbRoom);
 
         inputPanel.add(styledLabel("Người đặt:"));
@@ -155,6 +179,14 @@ public class MainFrame extends JFrame {
         inputPanel.add(txtVoucher);
 
         topArea.add(inputPanel);
+
+        // Mo ta hang phong + gia - cap nhat khi doi lua chon phong
+        lblMoTaPhong = new JLabel(" ");
+        lblMoTaPhong.setFont(new Font("Segoe UI", Font.ITALIC, 12));
+        lblMoTaPhong.setForeground(COLOR_ACCENT);
+        lblMoTaPhong.setBorder(BorderFactory.createEmptyBorder(6, 4, 0, 0));
+        topArea.add(lblMoTaPhong);
+
         centerPanel.add(topArea, BorderLayout.NORTH);
 
         // Bảng dữ liệu
@@ -264,6 +296,17 @@ public class MainFrame extends JFrame {
             public void removeUpdate(DocumentEvent e) { filterTable(); }
             public void changedUpdate(DocumentEvent e) { filterTable(); }
         });
+
+        // Hien thi mo ta + gia cua phong dau tien ngay khi mo giao dien
+        capNhatMoTaPhong();
+    }
+
+    // Cap nhat dong mo ta + gia theo phong dang duoc chon trong combo box
+    private void capNhatMoTaPhong() {
+        String room = (String) cbRoom.getSelectedItem();
+        int phi = ROOM_FEE.getOrDefault(room, 0);
+        String moTa = ROOM_DESC.getOrDefault(room, "");
+        lblMoTaPhong.setText("<html>" + moTa + " — <b>Giá: " + formatTien(phi) + "đ</b></html>");
     }
 
     // ============ TÍNH NĂNG: ĐẶT PHÒNG (có áp dụng voucher nếu có) ============
@@ -278,7 +321,7 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        int phiGoc = ROOM_FEE.getOrDefault(room, 50000);
+        int phiGoc = ROOM_FEE.getOrDefault(room, 30000);
         int phiThucTra = phiGoc;
 
         if (!maVoucher.isEmpty()) {
@@ -343,7 +386,7 @@ public class MainFrame extends JFrame {
         }
     }
 
-    // ============ TÍNH NĂNG 3: CHECK-IN (giống "Nhận vé tại quầy" bên rạp phim) ============
+    // ============ TÍNH NĂNG: CHECK-IN ============
     private void onCheckIn() {
         int viewRow = table.getSelectedRow();
         if (viewRow < 0) {
@@ -378,7 +421,7 @@ public class MainFrame extends JFrame {
                 "Check-in thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ============ TÍNH NĂNG 2: ĐỔI ĐIỂM LẤY VOUCHER ============
+    // ============ TÍNH NĂNG: ĐỔI ĐIỂM LẤY VOUCHER ============
     private void onDoiVoucher() {
         String tenMacDinh = txtUser.getText().trim();
         String ten = JOptionPane.showInputDialog(this,
@@ -455,7 +498,7 @@ public class MainFrame extends JFrame {
         JOptionPane.showMessageDialog(this, new JScrollPane(area), "Điểm & Voucher của bạn", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // ============ TÍNH NĂNG 4: THỐNG KÊ CHO ADMIN ============
+    // ============ TÍNH NĂNG: THỐNG KÊ CHO ADMIN ============
     private void onThongKe() {
         if (!isAdmin) {
             JOptionPane.showMessageDialog(this, "Chỉ Admin mới xem được thống kê!", "Không có quyền", JOptionPane.WARNING_MESSAGE);
@@ -478,7 +521,6 @@ public class MainFrame extends JFrame {
             else if (trangThai.equals(TT_DA_DUYET)) soDaDuyet++;
             else if (trangThai.equals(TT_DA_CHECKIN)) {
                 soDaCheckIn++;
-                // Chỉ tính doanh thu THẬT cho các đơn đã check-in (đã thực sự dùng phòng)
                 tongDoanhThu += (long) phi;
             }
         }
@@ -656,9 +698,7 @@ public class MainFrame extends JFrame {
                 if (data.length == 5) {
                     tableModel.addRow(data);
                 } else if (data.length == 4) {
-                    // Tương thích ngược với file dữ liệu cũ (chưa có cột Phí):
-                    // gán phí mặc định theo tên phòng, giữ nguyên trạng thái cũ.
-                    int phiMacDinh = ROOM_FEE.getOrDefault(data[0], 50000);
+                    int phiMacDinh = ROOM_FEE.getOrDefault(data[0], 30000);
                     tableModel.addRow(new Object[]{data[0], data[1], data[2], phiMacDinh, data[3]});
                 }
             }

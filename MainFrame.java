@@ -694,3 +694,4 @@ public class MainFrame extends JFrame {
         SwingUtilities.invokeLater(() -> new MainFrame(true).setVisible(true));
     }
 }
+

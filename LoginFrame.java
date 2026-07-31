@@ -15,7 +15,6 @@ public class LoginFrame extends JFrame {
     private static final Color COLOR_PANEL = new Color(8, 14, 28, 200);
     private static final Color COLOR_DANGER = new Color(230, 90, 90);
 
-    // Panel vẽ ảnh nền thật, co giãn theo kích thước cửa sổ + phủ mờ đen để chữ dễ đọc
     static class ImageBackgroundPanel extends JPanel {
         private Image bgImage;
 
@@ -34,7 +33,6 @@ public class LoginFrame extends JFrame {
             super.paintComponent(g);
             if (bgImage != null) {
                 g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
-                // Lớp phủ đen mờ giúp chữ trắng nổi bật, dễ đọc hơn trên ảnh nền
                 g.setColor(new Color(0, 0, 0, 115));
                 g.fillRect(0, 0, getWidth(), getHeight());
             } else {
@@ -53,14 +51,12 @@ public class LoginFrame extends JFrame {
         ImageBackgroundPanel root = new ImageBackgroundPanel(new BorderLayout(10, 10));
         setContentPane(root);
 
-        // ---- Tiêu đề ----
         JLabel lblTitle = new JLabel("ĐĂNG NHẬP HỆ THỐNG", JLabel.CENTER);
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblTitle.setForeground(COLOR_WHITE);
         lblTitle.setBorder(BorderFactory.createEmptyBorder(24, 10, 10, 10));
         root.add(lblTitle, BorderLayout.NORTH);
 
-        // ---- Form nhập (đặt trong khung nền mờ để dễ đọc chữ) ----
         JPanel formWrapper = new JPanel(new GridBagLayout());
         formWrapper.setOpaque(false);
 
@@ -91,7 +87,6 @@ public class LoginFrame extends JFrame {
         formWrapper.add(panelForm);
         root.add(formWrapper, BorderLayout.CENTER);
 
-        // ---- Nút bấm ----
         JPanel panelButton = new JPanel();
         panelButton.setOpaque(false);
         panelButton.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
@@ -103,7 +98,6 @@ public class LoginFrame extends JFrame {
         panelButton.add(btnExit);
         root.add(panelButton, BorderLayout.SOUTH);
 
-        // --- Xử lý sự kiện ---
         btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {

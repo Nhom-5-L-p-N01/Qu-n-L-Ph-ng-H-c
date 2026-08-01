@@ -1,18 +1,28 @@
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableRowSorter;
-import javax.swing.event.DocumentListener;
 import javax.swing.event.DocumentEvent;
-import javax.imageio.ImageIO;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.*;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
 
+/**
+ * Màn hình chính: quản lý đặt phòng học, duyệt/check-in, điểm & voucher,
+ * thống kê (Admin).
+ */
 public class MainFrame extends JFrame {
+    private static final long serialVersionUID = 1L;
+
     private JTextField txtUser, txtSearch, txtVoucher;
     private JComboBox<String> cbRoom, cbTime;
     private JTable table;
@@ -21,21 +31,11 @@ public class MainFrame extends JFrame {
     private final String FILE_PATH = "data_booking.txt";
     private boolean isAdmin = false;
 
-    private JLabel lblStatTotal, lblStatPending, lblStatApproved, lblStatDone;
+    private UITheme.StatCard cardTotal, cardPending, cardApproved, cardDone;
     private JLabel lblMoTaPhong;
 
     private final PointsManager pointsManager = new PointsManager();
     private final VoucherManager voucherManager = new VoucherManager();
-
-    private static final Color COLOR_ACCENT = new Color(41, 182, 246);
-    private static final Color COLOR_WHITE = Color.WHITE;
-    private static final Color COLOR_PANEL = new Color(8, 14, 28, 200);
-    private static final Color COLOR_TABLE_BG = new Color(8, 14, 28, 170);
-    private static final Color COLOR_ROW_ALT = new Color(20, 30, 50, 170);
-    private static final Color COLOR_AMBER = new Color(255, 193, 7);
-    private static final Color COLOR_DANGER = new Color(230, 90, 90);
-    private static final Color COLOR_SUCCESS = new Color(80, 220, 160);
-    private static final Color COLOR_INFO = new Color(140, 160, 255);
 
     private final String[] ROOM_LIST = {
             "P.101 (Thường)", "P.102 (Thường)",
@@ -45,7 +45,9 @@ public class MainFrame extends JFrame {
             "Hội trường A"
     };
 
-    private final String[] TIME_LIST = {"07:00 - 09:00", "09:00 - 11:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00"};
+    private final String[] TIME_LIST = {
+            "07:00 - 09:00", "09:00 - 11:00", "13:00 - 15:00", "15:00 - 17:00", "17:00 - 19:00"
+    };
 
     private final Map<String, Integer> ROOM_FEE = new LinkedHashMap<String, Integer>() {{
         put("P.101 (Thường)", 30000);
@@ -73,35 +75,6 @@ public class MainFrame extends JFrame {
     private static final String TT_DA_DUYET = "Đã duyệt";
     private static final String TT_DA_CHECKIN = "Đã check-in";
 
-    // Panel vẽ ảnh nền thật, co giãn theo kích thước cửa sổ + phủ mờ đen để bảng/chữ dễ đọc
-    static class ImageBackgroundPanel extends JPanel {
-        private Image bgImage;
-
-        ImageBackgroundPanel(LayoutManager lm) {
-            super(lm);
-            setOpaque(true);
-            try {
-                bgImage = ImageIO.read(new File("background.jpg"));
-            } catch (IOException e) {
-                bgImage = null;
-            }
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (bgImage != null) {
-                g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
-                // Lớp phủ đen mờ giúp bảng dữ liệu và chữ dễ đọc hơn trên ảnh nền
-                g.setColor(new Color(0, 0, 0, 130));
-                g.fillRect(0, 0, getWidth(), getHeight());
-            } else {
-                g.setColor(new Color(6, 10, 22));
-                g.fillRect(0, 0, getWidth(), getHeight());
-            }
-        }
-    }
-
     public MainFrame(boolean isAdmin) {
         this.isAdmin = isAdmin;
         initUI();
@@ -112,25 +85,43 @@ public class MainFrame extends JFrame {
         this(false);
     }
 
+    // ============================== GIAO DIỆN ==============================
+
     private void initUI() {
-        setTitle("HỆ THỐNG QUẢN LÝ ĐẶT PHÒNG HỌC - " + (isAdmin ? "QUYỀN ADMIN" : "QUYỀN USER"));
-        setSize(900, 700);
+        setTitle("Hệ thống quản lý đặt phòng học — " + (isAdmin ? "Quyền Admin" : "Quyền User"));
+        setSize(980, 760);
+        setMinimumSize(new Dimension(860, 620));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        ImageBackgroundPanel root = new ImageBackgroundPanel(new BorderLayout(10, 10));
+        UITheme.BackgroundPanel root = new UITheme.BackgroundPanel(new BorderLayout(10, 10));
         setContentPane(root);
 
-        JLabel lblTitle = new JLabel("QUẢN LÝ ĐẶT PHÒNG HỌC", JLabel.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitle.setForeground(COLOR_WHITE);
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
-        root.add(lblTitle, BorderLayout.NORTH);
+        root.add(buildTitleBar(), BorderLayout.NORTH);
 
-        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 12));
         centerPanel.setOpaque(false);
-        centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
+        centerPanel.setBorder(BorderFactory.createEmptyBorder(0, 16, 0, 16));
 
+        centerPanel.add(buildTopArea(), BorderLayout.NORTH);
+        centerPanel.add(buildTablePanel(), BorderLayout.CENTER);
+        centerPanel.add(buildStatsPanel(), BorderLayout.SOUTH);
+
+        root.add(centerPanel, BorderLayout.CENTER);
+        root.add(buildButtonBar(), BorderLayout.SOUTH);
+
+        capNhatMoTaPhong();
+    }
+
+    private JLabel buildTitleBar() {
+        JLabel lblTitle = new JLabel("QUẢN LÝ ĐẶT PHÒNG HỌC", JLabel.CENTER);
+        lblTitle.setFont(UITheme.FONT_TITLE);
+        lblTitle.setForeground(UITheme.WHITE);
+        lblTitle.setBorder(BorderFactory.createEmptyBorder(16, 10, 10, 10));
+        return lblTitle;
+    }
+
+    private JPanel buildTopArea() {
         JPanel topArea = new JPanel();
         topArea.setLayout(new BoxLayout(topArea, BoxLayout.Y_AXIS));
         topArea.setOpaque(false);
@@ -138,66 +129,86 @@ public class MainFrame extends JFrame {
         JPanel searchPanel = new JPanel(new BorderLayout(8, 0));
         searchPanel.setOpaque(false);
         searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        JLabel lblSearch = new JLabel("Tìm kiếm:");
-        lblSearch.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblSearch.setForeground(COLOR_WHITE);
-        searchPanel.add(lblSearch, BorderLayout.WEST);
-        txtSearch = styledTextField();
+        searchPanel.add(
+                UITheme.fieldLabel("Tìm kiếm", IconFactory.of(IconFactory.Type.SEARCH, UITheme.WHITE, 16)),
+                BorderLayout.WEST);
+        txtSearch = UITheme.roundedTextField();
         searchPanel.add(txtSearch, BorderLayout.CENTER);
         topArea.add(searchPanel);
 
-        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 10, 10));
-        inputPanel.setBackground(COLOR_PANEL);
+        UITheme.RoundedPanel inputPanel = new UITheme.RoundedPanel(
+                new GridLayout(4, 2, 12, 10), 16, UITheme.GLASS_PANEL, UITheme.PRIMARY);
         inputPanel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createTitledBorder(
-                        BorderFactory.createLineBorder(COLOR_ACCENT, 1),
+                        BorderFactory.createEmptyBorder(),
                         "Thông tin đặt phòng",
-                        0, 0, new Font("Segoe UI", Font.BOLD, 13), COLOR_ACCENT),
-                BorderFactory.createEmptyBorder(10, 15, 10, 15)));
+                        0, 0, UITheme.font(Font.BOLD, 13), UITheme.PRIMARY),
+                BorderFactory.createEmptyBorder(6, 16, 12, 16)));
 
-        inputPanel.add(styledLabel("Phòng học:"));
+        inputPanel.add(UITheme.fieldLabel("Phòng học", IconFactory.of(IconFactory.Type.ROOM, UITheme.PRIMARY, 15)));
         cbRoom = new JComboBox<>(ROOM_LIST);
-        styleCombo(cbRoom);
+        UITheme.styleCombo(cbRoom);
         cbRoom.addActionListener(e -> capNhatMoTaPhong());
         inputPanel.add(cbRoom);
 
-        inputPanel.add(styledLabel("Người đặt:"));
-        txtUser = styledTextField();
+        inputPanel.add(UITheme.fieldLabel("Người đặt", IconFactory.of(IconFactory.Type.USER, UITheme.PRIMARY, 15)));
+        txtUser = UITheme.roundedTextField();
         inputPanel.add(txtUser);
 
-        inputPanel.add(styledLabel("Khung giờ:"));
+        inputPanel.add(UITheme.fieldLabel("Khung giờ", IconFactory.of(IconFactory.Type.CLOCK, UITheme.PRIMARY, 15)));
         cbTime = new JComboBox<>(TIME_LIST);
-        styleCombo(cbTime);
+        UITheme.styleCombo(cbTime);
         inputPanel.add(cbTime);
 
-        inputPanel.add(styledLabel("Mã voucher (nếu có):"));
-        txtVoucher = styledTextField();
+        inputPanel.add(UITheme.fieldLabel("Mã voucher (nếu có)", IconFactory.of(IconFactory.Type.GIFT, UITheme.PRIMARY, 15)));
+        txtVoucher = UITheme.roundedTextField();
         inputPanel.add(txtVoucher);
 
         topArea.add(inputPanel);
 
         lblMoTaPhong = new JLabel(" ");
-        lblMoTaPhong.setFont(new Font("Segoe UI", Font.ITALIC, 12));
-        lblMoTaPhong.setForeground(COLOR_ACCENT);
-        lblMoTaPhong.setBorder(BorderFactory.createEmptyBorder(6, 4, 0, 0));
+        lblMoTaPhong.setFont(UITheme.font(Font.ITALIC, 12));
+        lblMoTaPhong.setForeground(UITheme.PRIMARY);
+        lblMoTaPhong.setBorder(BorderFactory.createEmptyBorder(8, 4, 0, 0));
         topArea.add(lblMoTaPhong);
 
-        centerPanel.add(topArea, BorderLayout.NORTH);
+        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { filterTable(); }
+            public void removeUpdate(DocumentEvent e) { filterTable(); }
+            public void changedUpdate(DocumentEvent e) { filterTable(); }
+        });
 
+        return topArea;
+    }
+
+    private JScrollPane buildTablePanel() {
         String[] columnNames = {"Tên Phòng", "Người Đặt", "Thời Gian", "Phí", "Trạng Thái"};
-        tableModel = new DefaultTableModel(columnNames, 0);
+        tableModel = new DefaultTableModel(columnNames, 0) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         table = new JTable(tableModel);
-        table.setRowHeight(28);
-        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        table.setGridColor(new Color(60, 90, 130));
-        table.setForeground(COLOR_WHITE);
+        table.setRowHeight(32);
+        table.setFont(UITheme.FONT_TABLE);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setForeground(UITheme.WHITE);
         table.setOpaque(false);
-        table.setSelectionBackground(COLOR_ACCENT);
+        table.setSelectionBackground(UITheme.PRIMARY);
         table.setSelectionForeground(Color.BLACK);
-        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 13));
-        table.getTableHeader().setBackground(new Color(10, 20, 40));
-        table.getTableHeader().setForeground(COLOR_WHITE);
+        table.setFillsViewportHeight(true);
         table.setDefaultRenderer(Object.class, new StatusRowRenderer());
+
+        JTableHeader header = table.getTableHeader();
+        header.setFont(UITheme.FONT_TABLE_HEADER);
+        header.setBackground(UITheme.PRIMARY_DARK);
+        header.setForeground(UITheme.WHITE);
+        header.setPreferredSize(new Dimension(0, 34));
+        header.setReorderingAllowed(false);
 
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
@@ -205,62 +216,76 @@ public class MainFrame extends JFrame {
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
-        scrollPane.setBorder(BorderFactory.createLineBorder(COLOR_ACCENT));
-        centerPanel.add(scrollPane, BorderLayout.CENTER);
+        scrollPane.setBorder(new UITheme.RoundedLineBorder(UITheme.PRIMARY, 14, 1.4f));
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        return scrollPane;
+    }
 
-        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 10, 0));
+    private JPanel buildStatsPanel() {
+        JPanel statsPanel = new JPanel(new GridLayout(1, 4, 12, 0));
         statsPanel.setOpaque(false);
-        statsPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
+        statsPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 4, 0));
 
-        lblStatTotal = createStatLabel("Tổng: 0", COLOR_WHITE);
-        lblStatPending = createStatLabel("Chờ duyệt: 0", COLOR_AMBER);
-        lblStatApproved = createStatLabel("Đã duyệt: 0", COLOR_SUCCESS);
-        lblStatDone = createStatLabel("Đã check-in: 0", COLOR_INFO);
+        cardTotal = new UITheme.StatCard("Tổng lượt đặt", "0", UITheme.WHITE,
+                IconFactory.of(IconFactory.Type.CHART, UITheme.WHITE, 26));
+        cardPending = new UITheme.StatCard("Chờ duyệt", "0", UITheme.WARNING,
+                IconFactory.of(IconFactory.Type.CLOCK, UITheme.WARNING, 26));
+        cardApproved = new UITheme.StatCard("Đã duyệt", "0", UITheme.SUCCESS,
+                IconFactory.of(IconFactory.Type.CHECK, UITheme.SUCCESS, 26));
+        cardDone = new UITheme.StatCard("Đã check-in", "0", UITheme.INFO,
+                IconFactory.of(IconFactory.Type.DOOR, UITheme.INFO, 26));
 
-        statsPanel.add(lblStatTotal);
-        statsPanel.add(lblStatPending);
-        statsPanel.add(lblStatApproved);
-        statsPanel.add(lblStatDone);
-        centerPanel.add(statsPanel, BorderLayout.SOUTH);
+        statsPanel.add(cardTotal);
+        statsPanel.add(cardPending);
+        statsPanel.add(cardApproved);
+        statsPanel.add(cardDone);
+        return statsPanel;
+    }
 
-        root.add(centerPanel, BorderLayout.CENTER);
-
+    private JPanel buildButtonBar() {
         JPanel buttonWrap = new JPanel();
         buttonWrap.setLayout(new BoxLayout(buttonWrap, BoxLayout.Y_AXIS));
         buttonWrap.setOpaque(false);
+        buttonWrap.setBorder(BorderFactory.createEmptyBorder(6, 0, 14, 0));
 
-        JPanel buttonPanelRow1 = new JPanel(new FlowLayout());
-        buttonPanelRow1.setOpaque(false);
-        JPanel buttonPanelRow2 = new JPanel(new FlowLayout());
-        buttonPanelRow2.setOpaque(false);
-        buttonPanelRow2.setBorder(BorderFactory.createEmptyBorder(0, 0, 15, 0));
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 6));
+        row1.setOpaque(false);
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 6));
+        row2.setOpaque(false);
 
-        JButton btnAdd = createStyledButton("Gửi Đặt Phòng", COLOR_ACCENT);
-        JButton btnDelete = createStyledButton("Hủy Lịch", COLOR_DANGER);
-        JButton btnApprove = createStyledButton("Duyệt Phòng (Admin)", COLOR_SUCCESS);
-        JButton btnCheckIn = createStyledButton("Check-in (Nhận phòng)", COLOR_INFO);
-        JButton btnDoiVoucher = createStyledButton("Đổi điểm lấy Voucher", COLOR_AMBER);
-        JButton btnXemDiem = createStyledButton("Điểm & Voucher của tôi", new Color(120, 130, 150));
-        JButton btnThongKe = createStyledButton("Thống kê (Admin)", new Color(160, 100, 220));
-        JButton btnLogout = createStyledButton("Đăng Xuất", new Color(100, 110, 130));
+        JButton btnAdd = new UITheme.RoundedButton("Gửi Đặt Phòng", UITheme.PRIMARY_DARK,
+                IconFactory.of(IconFactory.Type.ADD, UITheme.WHITE, 16));
+        JButton btnDelete = new UITheme.RoundedButton("Hủy Lịch", UITheme.DANGER,
+                IconFactory.of(IconFactory.Type.TRASH, UITheme.WHITE, 16));
+        JButton btnApprove = new UITheme.RoundedButton("Duyệt Phòng (Admin)", UITheme.SUCCESS,
+                IconFactory.of(IconFactory.Type.CHECK, UITheme.WHITE, 16));
+        JButton btnCheckIn = new UITheme.RoundedButton("Check-in (Nhận phòng)", UITheme.INFO,
+                IconFactory.of(IconFactory.Type.DOOR, UITheme.WHITE, 16));
+        JButton btnDoiVoucher = new UITheme.RoundedButton("Đổi điểm lấy Voucher", UITheme.WARNING,
+                IconFactory.of(IconFactory.Type.GIFT, UITheme.WHITE, 16));
+        JButton btnXemDiem = new UITheme.RoundedButton("Điểm & Voucher của tôi", UITheme.NEUTRAL,
+                IconFactory.of(IconFactory.Type.STAR, UITheme.WHITE, 16));
+        JButton btnThongKe = new UITheme.RoundedButton("Thống kê (Admin)", UITheme.ACCENT,
+                IconFactory.of(IconFactory.Type.CHART, UITheme.WHITE, 16));
+        JButton btnLogout = new UITheme.RoundedButton("Đăng Xuất", new Color(71, 85, 105),
+                IconFactory.of(IconFactory.Type.LOGOUT, UITheme.WHITE, 16));
 
-        buttonPanelRow1.add(btnAdd);
-        buttonPanelRow1.add(btnDelete);
+        row1.add(btnAdd);
+        row1.add(btnDelete);
         if (isAdmin) {
-            buttonPanelRow1.add(btnApprove);
+            row1.add(btnApprove);
         }
-        buttonPanelRow1.add(btnCheckIn);
+        row1.add(btnCheckIn);
 
-        buttonPanelRow2.add(btnDoiVoucher);
-        buttonPanelRow2.add(btnXemDiem);
+        row2.add(btnDoiVoucher);
+        row2.add(btnXemDiem);
         if (isAdmin) {
-            buttonPanelRow2.add(btnThongKe);
+            row2.add(btnThongKe);
         }
-        buttonPanelRow2.add(btnLogout);
+        row2.add(btnLogout);
 
-        buttonWrap.add(buttonPanelRow1);
-        buttonWrap.add(buttonPanelRow2);
-        root.add(buttonWrap, BorderLayout.SOUTH);
+        buttonWrap.add(row1);
+        buttonWrap.add(row2);
 
         btnAdd.addActionListener(e -> onDatPhong());
         btnDelete.addActionListener(e -> onHuyLich());
@@ -269,7 +294,6 @@ public class MainFrame extends JFrame {
         btnDoiVoucher.addActionListener(e -> onDoiVoucher());
         btnXemDiem.addActionListener(e -> onXemDiemVaVoucher());
         btnThongKe.addActionListener(e -> onThongKe());
-
         btnLogout.addActionListener(e -> {
             int confirm = JOptionPane.showConfirmDialog(this,
                     "Bạn có chắc chắn muốn đăng xuất không?",
@@ -281,14 +305,10 @@ public class MainFrame extends JFrame {
             }
         });
 
-        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e) { filterTable(); }
-            public void removeUpdate(DocumentEvent e) { filterTable(); }
-            public void changedUpdate(DocumentEvent e) { filterTable(); }
-        });
-
-        capNhatMoTaPhong();
+        return buttonWrap;
     }
+
+    // ============================== HÀNH ĐỘNG ==============================
 
     private void capNhatMoTaPhong() {
         String room = (String) cbRoom.getSelectedItem();
@@ -322,9 +342,9 @@ public class MainFrame extends JFrame {
             phiThucTra = Math.max(0, phiGoc - v.giaTriGiam);
             voucherManager.danhDauDaDung(v);
             JOptionPane.showMessageDialog(this,
-                    "Áp dụng voucher " + v.maVoucher + " thành công!\n" +
-                            "Phí gốc: " + formatTien(phiGoc) + "đ - Giảm: " + formatTien(v.giaTriGiam) +
-                            "đ => Còn phải trả: " + formatTien(phiThucTra) + "đ");
+                    "Áp dụng voucher " + v.maVoucher + " thành công!\n"
+                            + "Phí gốc: " + formatTien(phiGoc) + "đ - Giảm: " + formatTien(v.giaTriGiam)
+                            + "đ => Còn phải trả: " + formatTien(phiThucTra) + "đ");
         }
 
         tableModel.addRow(new Object[]{room, user, time, phiThucTra, TT_CHO_DUYET});
@@ -402,8 +422,8 @@ public class MainFrame extends JFrame {
         updateStats();
 
         JOptionPane.showMessageDialog(this,
-                "Check-in thành công cho " + tenNguoiDat + "!\n" +
-                        "Cộng " + diemCong + " điểm tích lũy (tổng hiện có: " + pointsManager.layDiem(tenNguoiDat) + " điểm).",
+                "Check-in thành công cho " + tenNguoiDat + "!\n"
+                        + "Cộng " + diemCong + " điểm tích lũy (tổng hiện có: " + pointsManager.layDiem(tenNguoiDat) + " điểm).",
                 "Check-in thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -416,10 +436,10 @@ public class MainFrame extends JFrame {
 
         int diemHienCo = pointsManager.layDiem(ten);
         String nhap = JOptionPane.showInputDialog(this,
-                "Bạn (" + ten + ") đang có " + diemHienCo + " điểm.\n" +
-                        "Đổi tối thiểu " + VoucherManager.DIEM_TOI_THIEU + " điểm, theo bội số " + VoucherManager.BOI_SO_DOI + ".\n" +
-                        "Tỉ lệ: 1 điểm = " + formatTien(VoucherManager.GIA_TRI_MOI_DIEM) + "đ giảm giá.\n\n" +
-                        "Nhập số điểm muốn đổi:", "100");
+                "Bạn (" + ten + ") đang có " + diemHienCo + " điểm.\n"
+                        + "Đổi tối thiểu " + VoucherManager.DIEM_TOI_THIEU + " điểm, theo bội số " + VoucherManager.BOI_SO_DOI + ".\n"
+                        + "Tỉ lệ: 1 điểm = " + formatTien(VoucherManager.GIA_TRI_MOI_DIEM) + "đ giảm giá.\n\n"
+                        + "Nhập số điểm muốn đổi:", "100");
         if (nhap == null || nhap.trim().isEmpty()) return;
 
         int soDiem;
@@ -450,11 +470,11 @@ public class MainFrame extends JFrame {
         pointsManager.truDiem(ten, soDiem);
 
         JOptionPane.showMessageDialog(this,
-                "Đổi voucher thành công!\n\n" +
-                        "Mã voucher: " + v.maVoucher + "\n" +
-                        "Giá trị giảm: " + formatTien(v.giaTriGiam) + "đ\n" +
-                        "Điểm còn lại: " + pointsManager.layDiem(ten) + " điểm\n\n" +
-                        "Nhập mã này vào ô \"Mã voucher\" ở lần đặt phòng tiếp theo để được giảm giá.",
+                "Đổi voucher thành công!\n\n"
+                        + "Mã voucher: " + v.maVoucher + "\n"
+                        + "Giá trị giảm: " + formatTien(v.giaTriGiam) + "đ\n"
+                        + "Điểm còn lại: " + pointsManager.layDiem(ten) + " điểm\n\n"
+                        + "Nhập mã này vào ô \"Mã voucher\" ở lần đặt phòng tiếp theo để được giảm giá.",
                 "Đổi voucher thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -479,7 +499,7 @@ public class MainFrame extends JFrame {
         }
         JTextArea area = new JTextArea(sb.toString());
         area.setEditable(false);
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(UITheme.FONT_TABLE);
         JOptionPane.showMessageDialog(this, new JScrollPane(area), "Điểm & Voucher của bạn", JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -501,9 +521,11 @@ public class MainFrame extends JFrame {
 
             soLuotTheoPhong.merge(phong, 1, Integer::sum);
 
-            if (trangThai.equals(TT_CHO_DUYET)) soChoDuyet++;
-            else if (trangThai.equals(TT_DA_DUYET)) soDaDuyet++;
-            else if (trangThai.equals(TT_DA_CHECKIN)) {
+            if (trangThai.equals(TT_CHO_DUYET)) {
+                soChoDuyet++;
+            } else if (trangThai.equals(TT_DA_DUYET)) {
+                soDaDuyet++;
+            } else if (trangThai.equals(TT_DA_CHECKIN)) {
                 soDaCheckIn++;
                 tongDoanhThu += (long) phi;
             }
@@ -534,7 +556,7 @@ public class MainFrame extends JFrame {
 
         JTextArea area = new JTextArea(sb.toString());
         area.setEditable(false);
-        area.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        area.setFont(UITheme.FONT_TABLE);
         area.setRows(18);
         area.setColumns(40);
         JOptionPane.showMessageDialog(this, new JScrollPane(area), "Thống kê (Admin)", JOptionPane.INFORMATION_MESSAGE);
@@ -562,80 +584,36 @@ public class MainFrame extends JFrame {
             else if (status.equals(TT_DA_DUYET)) approved++;
             else if (status.equals(TT_DA_CHECKIN)) done++;
         }
-        lblStatTotal.setText("Tổng: " + total);
-        lblStatPending.setText("Chờ duyệt: " + pending);
-        lblStatApproved.setText("Đã duyệt: " + approved);
-        lblStatDone.setText("Đã check-in: " + done);
+        cardTotal.setValue(String.valueOf(total));
+        cardPending.setValue(String.valueOf(pending));
+        cardApproved.setValue(String.valueOf(approved));
+        cardDone.setValue(String.valueOf(done));
     }
 
-    private JLabel styledLabel(String text) {
-        JLabel lbl = new JLabel(text);
-        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lbl.setForeground(COLOR_ACCENT);
-        return lbl;
-    }
-
-    private JLabel createStatLabel(String text, Color color) {
-        JLabel lbl = new JLabel(text, JLabel.CENTER);
-        lbl.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        lbl.setForeground(color);
-        lbl.setOpaque(true);
-        lbl.setBackground(COLOR_PANEL);
-        lbl.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_ACCENT),
-                BorderFactory.createEmptyBorder(6, 10, 6, 10)));
-        return lbl;
-    }
-
-    private JTextField styledTextField() {
-        JTextField tf = new JTextField();
-        tf.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        tf.setBackground(new Color(255, 255, 255, 230));
-        tf.setForeground(new Color(10, 20, 40));
-        tf.setCaretColor(COLOR_ACCENT);
-        tf.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_ACCENT, 1),
-                BorderFactory.createEmptyBorder(4, 6, 4, 6)));
-        return tf;
-    }
-
-    private void styleCombo(JComboBox<String> combo) {
-        combo.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        combo.setBackground(new Color(255, 255, 255, 230));
-        combo.setForeground(new Color(10, 20, 40));
-    }
-
-    private JButton createStyledButton(String text, Color bgColor) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        btn.setForeground(COLOR_WHITE);
-        btn.setBackground(bgColor);
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return btn;
-    }
+    // ============================== TRÌNH VẼ BẢNG ==============================
 
     private class StatusRowRenderer extends DefaultTableCellRenderer {
+        private static final long serialVersionUID = 1L;
+
         @Override
         public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected,
                                                          boolean hasFocus, int row, int column) {
             Component c = super.getTableCellRendererComponent(tbl, value, isSelected, hasFocus, row, column);
 
             if (!isSelected) {
-                c.setBackground(row % 2 == 0 ? COLOR_TABLE_BG : COLOR_ROW_ALT);
-                c.setForeground(COLOR_WHITE);
+                c.setBackground(row % 2 == 0 ? UITheme.TABLE_ROW_1 : UITheme.TABLE_ROW_2);
+                c.setForeground(UITheme.WHITE);
 
                 if (column == 4 && value != null) {
                     String status = value.toString();
                     if (status.equals(TT_DA_CHECKIN)) {
-                        c.setForeground(COLOR_INFO);
+                        c.setForeground(UITheme.INFO);
                         setFont(getFont().deriveFont(Font.BOLD));
                     } else if (status.equals(TT_DA_DUYET)) {
-                        c.setForeground(COLOR_SUCCESS);
+                        c.setForeground(UITheme.SUCCESS);
                         setFont(getFont().deriveFont(Font.BOLD));
                     } else if (status.equals(TT_CHO_DUYET)) {
-                        c.setForeground(COLOR_AMBER);
+                        c.setForeground(UITheme.WARNING);
                         setFont(getFont().deriveFont(Font.BOLD));
                     } else {
                         setFont(getFont().deriveFont(Font.PLAIN));
@@ -644,10 +622,13 @@ public class MainFrame extends JFrame {
                     setFont(getFont().deriveFont(Font.PLAIN));
                 }
             }
+            setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 10));
             ((JComponent) c).setOpaque(true);
             return c;
         }
     }
+
+    // ============================== LƯU / NẠP DỮ LIỆU ==============================
 
     private void saveDataToFile() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
@@ -694,4 +675,3 @@ public class MainFrame extends JFrame {
         SwingUtilities.invokeLater(() -> new MainFrame(true).setVisible(true));
     }
 }
-

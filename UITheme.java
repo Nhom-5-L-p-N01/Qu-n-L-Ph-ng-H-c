@@ -11,10 +11,6 @@ import java.net.URL;
  * Bộ giao diện dùng chung cho toàn bộ ứng dụng: bảng màu, font chữ,
  * ảnh nền (nạp 1 lần, dùng lại cho mọi cửa sổ) và các thành phần UI
  * bo góc hiện đại (nút, ô nhập, panel kính mờ, thẻ thống kê).
- *
- * Gom về một nơi để LoginFrame / RegisterFrame / MainFrame không phải
- * khai báo lặp lại cùng một đoạn code (trước đây mỗi màn hình có riêng
- * 1 bản ImageBackgroundPanel giống hệt nhau).
  */
 public final class UITheme {
 
@@ -23,9 +19,9 @@ public final class UITheme {
 
     // ================= BẢNG MÀU =================
     public static final Color BG_DARK      = new Color(13, 18, 32);
-    public static final Color PRIMARY      = new Color(56, 189, 248);   // xanh cyan
+    public static final Color PRIMARY      = new Color(56, 189, 248);
     public static final Color PRIMARY_DARK = new Color(14, 116, 144);
-    public static final Color ACCENT       = new Color(99, 102, 241);   // tím indigo
+    public static final Color ACCENT       = new Color(99, 102, 241);
     public static final Color SUCCESS      = new Color(52, 211, 153);
     public static final Color WARNING      = new Color(251, 191, 36);
     public static final Color DANGER       = new Color(248, 113, 113);
@@ -202,7 +198,7 @@ public final class UITheme {
         }
     }
 
-    // ================= VIỀN BO GÓC (dùng cho ô nhập / combobox) =================
+    // ================= VIỀN BO GÓC TỰ VẼ (giữ lại, dùng cho card/panel khác nếu cần) =================
     public static class RoundedLineBorder extends AbstractBorder {
         private static final long serialVersionUID = 1L;
         private final Color color;
@@ -244,17 +240,18 @@ public final class UITheme {
         return field;
     }
 
-    // ĐÃ SỬA: bỏ alpha (độ trong suốt) khỏi nền ô nhập — đây là nguyên nhân
-    // khiến chữ gõ vào bị vẽ chồng/nhòe, nhìn như "không hiện chữ". Ô nhập
-    // khai báo opaque=true nhưng lại tô nền trong suốt là vi phạm quy tắc
-    // của Swing, gây lỗi vẽ lại khi gõ phím.
+    // Vien bo goc co san cua Swing + chieu cao co dinh 36px de chu
+    // khong bi cat khi nam trong panel co chieu cao gioi han.
     private static void styleField(JTextField field) {
         field.setFont(FONT_LABEL);
         field.setForeground(new Color(15, 23, 42));
         field.setBackground(Color.WHITE);
         field.setOpaque(true);
         field.setCaretColor(PRIMARY_DARK);
-        field.setBorder(new RoundedLineBorder(PRIMARY, 10, 1.4f));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(PRIMARY, 2, true),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        field.setPreferredSize(new Dimension(field.getPreferredSize().width, 36));
     }
 
     public static void styleCombo(JComboBox<String> combo) {
@@ -263,6 +260,7 @@ public final class UITheme {
         combo.setForeground(new Color(15, 23, 42));
         combo.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
         combo.setFocusable(false);
+        combo.setPreferredSize(new Dimension(combo.getPreferredSize().width, 36));
     }
 
     public static JLabel fieldLabel(String text, Icon icon) {

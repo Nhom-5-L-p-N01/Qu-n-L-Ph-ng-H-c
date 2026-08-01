@@ -14,13 +14,12 @@ public class LoginFrame extends JFrame {
 
     private final AccountRepository accountRepository = new AccountRepository();
 
-    // Chỉ đúng tài khoản này mới được cấp quyền ADMIN
     private static final String ADMIN_EMAIL = "admin123@gmail.com";
     private static final String ADMIN_PASSWORD = "mochirangrua";
 
     public LoginFrame() {
         setTitle("Đăng nhập hệ thống quản lý phòng học");
-        setSize(440, 400);
+        setSize(440, 420);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -61,17 +60,17 @@ public class LoginFrame extends JFrame {
 
     private JPanel buildFormCard() {
         UITheme.RoundedPanel card = new UITheme.RoundedPanel(
-                new GridLayout(2, 1, 0, 16), 20, UITheme.GLASS_PANEL, UITheme.PRIMARY);
+                new GridLayout(2, 1, 0, 20), 20, UITheme.GLASS_PANEL, UITheme.PRIMARY);
         card.setBorder(BorderFactory.createEmptyBorder(26, 28, 26, 28));
-        card.setPreferredSize(new Dimension(340, 150));
+        card.setPreferredSize(new Dimension(340, 190));
 
-        JPanel rowUser = new JPanel(new BorderLayout(0, 6));
+        JPanel rowUser = new JPanel(new BorderLayout(0, 8));
         rowUser.setOpaque(false);
         rowUser.add(UITheme.fieldLabel("Tài khoản / Email", IconFactory.of(IconFactory.Type.USER, UITheme.PRIMARY, 16)), BorderLayout.NORTH);
         txtUsername = UITheme.roundedTextField();
         rowUser.add(txtUsername, BorderLayout.CENTER);
 
-        JPanel rowPass = new JPanel(new BorderLayout(0, 6));
+        JPanel rowPass = new JPanel(new BorderLayout(0, 8));
         rowPass.setOpaque(false);
         rowPass.add(UITheme.fieldLabel("Mật khẩu", IconFactory.of(IconFactory.Type.LOCK, UITheme.PRIMARY, 16)), BorderLayout.NORTH);
         txtPassword = UITheme.roundedPasswordField();
@@ -132,9 +131,6 @@ public class LoginFrame extends JFrame {
         return panelSouth;
     }
 
-    // ĐÃ SỬA: bỏ 2 lối tắt cũ (admin/123 và user/123). Giờ chỉ đúng
-    // ADMIN_EMAIL + ADMIN_PASSWORD mới được cấp quyền Admin; mọi tài khoản
-    // khác đăng nhập bình thường qua danh sách đã đăng ký (AccountRepository).
     private void thucHienDangNhap() {
         String user = txtUsername.getText().trim();
         String pass = new String(txtPassword.getPassword()).trim();
@@ -160,6 +156,13 @@ public class LoginFrame extends JFrame {
     }
 
     public static void main(String[] args) {
+        System.setProperty("sun.java2d.d3d", "false");
+        System.setProperty("sun.java2d.ddoffscreen", "false");
+        System.setProperty("sun.java2d.noddraw", "true");
+        System.setProperty("sun.java2d.opengl", "false");
+        System.setProperty("sun.java2d.pmoffscreen", "false");
+        System.setProperty("swing.bufferPerWindow", "false");
+
         SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
     }
 }

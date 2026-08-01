@@ -1,122 +1,119 @@
 import javax.swing.*;
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.io.IOException;
 
+/**
+ * Màn hình đăng nhập hệ thống.
+ */
 public class LoginFrame extends JFrame {
+    private static final long serialVersionUID = 1L;
+
     private JTextField txtUsername;
     private JPasswordField txtPassword;
 
     private final AccountRepository accountRepository = new AccountRepository();
 
-    private static final Color COLOR_ACCENT = new Color(41, 182, 246);
-    private static final Color COLOR_WHITE = Color.WHITE;
-    private static final Color COLOR_PANEL = new Color(8, 14, 28, 200);
-    private static final Color COLOR_DANGER = new Color(230, 90, 90);
-
-    static class ImageBackgroundPanel extends JPanel {
-        private Image bgImage;
-
-        ImageBackgroundPanel(LayoutManager lm) {
-            super(lm);
-            setOpaque(true);
-            try {
-                bgImage = ImageIO.read(new File("background.jpg"));
-            } catch (IOException e) {
-                bgImage = null;
-            }
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (bgImage != null) {
-                g.drawImage(bgImage, 0, 0, getWidth(), getHeight(), this);
-                g.setColor(new Color(0, 0, 0, 115));
-                g.fillRect(0, 0, getWidth(), getHeight());
-            } else {
-                g.setColor(new Color(6, 10, 22));
-                g.fillRect(0, 0, getWidth(), getHeight());
-            }
-        }
-    }
+    // Chỉ đúng tài khoản này mới được cấp quyền ADMIN
+    private static final String ADMIN_EMAIL = "admin123@gmail.com";
+    private static final String ADMIN_PASSWORD = "mochirangrua";
 
     public LoginFrame() {
-        setTitle("ĐĂNG NHẬP HỆ THỐNG QUẢN LÝ PHÒNG HỌC");
-        setSize(420, 360);
+        setTitle("Đăng nhập hệ thống quản lý phòng học");
+        setSize(440, 400);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        ImageBackgroundPanel root = new ImageBackgroundPanel(new BorderLayout(10, 10));
+        UITheme.BackgroundPanel root = new UITheme.BackgroundPanel(new BorderLayout(10, 10));
         setContentPane(root);
 
-        JLabel lblTitle = new JLabel("ĐĂNG NHẬP HỆ THỐNG", JLabel.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
-        lblTitle.setForeground(COLOR_WHITE);
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(24, 10, 10, 10));
-        root.add(lblTitle, BorderLayout.NORTH);
+        root.add(buildHeader(), BorderLayout.NORTH);
 
         JPanel formWrapper = new JPanel(new GridBagLayout());
         formWrapper.setOpaque(false);
-
-        JPanel panelForm = new JPanel(new GridLayout(2, 2, 12, 15));
-        panelForm.setBackground(COLOR_PANEL);
-        panelForm.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_ACCENT, 1),
-                BorderFactory.createEmptyBorder(15, 20, 15, 20)));
-
-        JLabel lblUser = new JLabel("Tài khoản/Email:");
-        lblUser.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lblUser.setForeground(COLOR_ACCENT);
-        panelForm.add(lblUser);
-
-        txtUsername = new JTextField();
-        styleField(txtUsername);
-        panelForm.add(txtUsername);
-
-        JLabel lblPass = new JLabel("Mật khẩu:");
-        lblPass.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        lblPass.setForeground(COLOR_ACCENT);
-        panelForm.add(lblPass);
-
-        txtPassword = new JPasswordField();
-        styleField(txtPassword);
-        panelForm.add(txtPassword);
-
-        formWrapper.add(panelForm);
+        formWrapper.add(buildFormCard());
         root.add(formWrapper, BorderLayout.CENTER);
 
+        root.add(buildFooter(), BorderLayout.SOUTH);
+    }
+
+    private JPanel buildHeader() {
+        JPanel header = new JPanel();
+        header.setOpaque(false);
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setBorder(BorderFactory.createEmptyBorder(28, 10, 10, 10));
+
+        JLabel lblTitle = new JLabel("ĐĂNG NHẬP HỆ THỐNG", JLabel.CENTER);
+        lblTitle.setFont(UITheme.FONT_TITLE);
+        lblTitle.setForeground(UITheme.WHITE);
+        lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel lblSubtitle = new JLabel("Quản lý đặt phòng học", JLabel.CENTER);
+        lblSubtitle.setFont(UITheme.FONT_SUBTITLE);
+        lblSubtitle.setForeground(UITheme.TEXT_MUTED);
+        lblSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+        lblSubtitle.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
+
+        header.add(lblTitle);
+        header.add(lblSubtitle);
+        return header;
+    }
+
+    private JPanel buildFormCard() {
+        UITheme.RoundedPanel card = new UITheme.RoundedPanel(
+                new GridLayout(2, 1, 0, 16), 20, UITheme.GLASS_PANEL, UITheme.PRIMARY);
+        card.setBorder(BorderFactory.createEmptyBorder(26, 28, 26, 28));
+        card.setPreferredSize(new Dimension(340, 150));
+
+        JPanel rowUser = new JPanel(new BorderLayout(0, 6));
+        rowUser.setOpaque(false);
+        rowUser.add(UITheme.fieldLabel("Tài khoản / Email", IconFactory.of(IconFactory.Type.USER, UITheme.PRIMARY, 16)), BorderLayout.NORTH);
+        txtUsername = UITheme.roundedTextField();
+        rowUser.add(txtUsername, BorderLayout.CENTER);
+
+        JPanel rowPass = new JPanel(new BorderLayout(0, 6));
+        rowPass.setOpaque(false);
+        rowPass.add(UITheme.fieldLabel("Mật khẩu", IconFactory.of(IconFactory.Type.LOCK, UITheme.PRIMARY, 16)), BorderLayout.NORTH);
+        txtPassword = UITheme.roundedPasswordField();
+        rowPass.add(txtPassword, BorderLayout.CENTER);
+
+        card.add(rowUser);
+        card.add(rowPass);
+        return card;
+    }
+
+    private JPanel buildFooter() {
         JPanel panelSouth = new JPanel();
         panelSouth.setOpaque(false);
         panelSouth.setLayout(new BoxLayout(panelSouth, BoxLayout.Y_AXIS));
-        panelSouth.setBorder(BorderFactory.createEmptyBorder(0, 0, 20, 0));
+        panelSouth.setBorder(BorderFactory.createEmptyBorder(0, 0, 22, 0));
 
-        JPanel panelButton = new JPanel();
+        JPanel panelButton = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         panelButton.setOpaque(false);
         panelButton.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        JButton btnLogin = createStyledButton("Đăng nhập", COLOR_ACCENT);
-        JButton btnExit = createStyledButton("Thoát", COLOR_DANGER);
+        JButton btnLogin = new UITheme.RoundedButton("Đăng nhập", UITheme.PRIMARY_DARK,
+                IconFactory.of(IconFactory.Type.CHECK, UITheme.WHITE, 16));
+        JButton btnExit = new UITheme.RoundedButton("Thoát", UITheme.DANGER,
+                IconFactory.of(IconFactory.Type.LOGOUT, UITheme.WHITE, 16));
 
         panelButton.add(btnLogin);
         panelButton.add(btnExit);
 
-        JButton btnRegisterLink = new JButton("Quý khách chưa có tài khoản? Đăng ký tài khoản");
+        JButton btnRegisterLink = new JButton("Chưa có tài khoản? Đăng ký ngay",
+                IconFactory.of(IconFactory.Type.ADD_USER, UITheme.PRIMARY, 14));
         btnRegisterLink.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnRegisterLink.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        btnRegisterLink.setForeground(COLOR_ACCENT);
+        btnRegisterLink.setFont(UITheme.FONT_LINK);
+        btnRegisterLink.setForeground(UITheme.PRIMARY);
         btnRegisterLink.setBorderPainted(false);
         btnRegisterLink.setContentAreaFilled(false);
         btnRegisterLink.setFocusPainted(false);
+        btnRegisterLink.setIconTextGap(6);
         btnRegisterLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         panelSouth.add(panelButton);
-        panelSouth.add(Box.createVerticalStrut(8));
+        panelSouth.add(Box.createVerticalStrut(10));
         panelSouth.add(btnRegisterLink);
-        root.add(panelSouth, BorderLayout.SOUTH);
 
         btnRegisterLink.addActionListener(e -> {
             new RegisterFrame().setVisible(true);
@@ -126,61 +123,43 @@ public class LoginFrame extends JFrame {
         btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String user = txtUsername.getText().trim();
-                String pass = new String(txtPassword.getPassword()).trim();
-
-                if (user.equals("admin") && pass.equals("123")) {
-                    JOptionPane.showMessageDialog(LoginFrame.this, "Đăng nhập thành công với quyền ADMIN!");
-                    new MainFrame(true).setVisible(true);
-                    dispose();
-                } else if (user.equals("user") && pass.equals("123")) {
-                    JOptionPane.showMessageDialog(LoginFrame.this, "Đăng nhập thành công với quyền USER!");
-                    new MainFrame(false).setVisible(true);
-                    dispose();
-                } else {
-                    Account acc = accountRepository.dangNhap(user, pass);
-                    if (acc != null) {
-                        JOptionPane.showMessageDialog(LoginFrame.this,
-                                "Xin chào " + acc.getHoTen() + "! Đăng nhập thành công.");
-                        new MainFrame(false).setVisible(true);
-                        dispose();
-                    } else {
-                        JOptionPane.showMessageDialog(LoginFrame.this,
-                                "Tài khoản hoặc mật khẩu không đúng!\n\nGợi ý đăng nhập:\n- Quyền Admin: admin / 123\n- Quyền User: user / 123\n- Hoặc đăng nhập bằng email đã đăng ký",
-                                "Lỗi Đăng Nhập",
-                                JOptionPane.ERROR_MESSAGE);
-                    }
-                }
+                thucHienDangNhap();
             }
         });
 
         btnExit.addActionListener(e -> System.exit(0));
+
+        return panelSouth;
     }
 
-    private void styleField(JTextField field) {
-        field.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        field.setBackground(new Color(255, 255, 255, 230));
-        field.setForeground(new Color(10, 20, 40));
-        field.setCaretColor(COLOR_ACCENT);
-        field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_ACCENT, 1),
-                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
-    }
+    // ĐÃ SỬA: bỏ 2 lối tắt cũ (admin/123 và user/123). Giờ chỉ đúng
+    // ADMIN_EMAIL + ADMIN_PASSWORD mới được cấp quyền Admin; mọi tài khoản
+    // khác đăng nhập bình thường qua danh sách đã đăng ký (AccountRepository).
+    private void thucHienDangNhap() {
+        String user = txtUsername.getText().trim();
+        String pass = new String(txtPassword.getPassword()).trim();
 
-    private JButton createStyledButton(String text, Color accent) {
-        JButton btn = new JButton(text);
-        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        btn.setForeground(COLOR_WHITE);
-        btn.setBackground(accent);
-        btn.setFocusPainted(false);
-        btn.setBorder(BorderFactory.createEmptyBorder(8, 20, 8, 20));
-        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        return btn;
+        if (user.equalsIgnoreCase(ADMIN_EMAIL) && pass.equals(ADMIN_PASSWORD)) {
+            JOptionPane.showMessageDialog(this, "Đăng nhập thành công với quyền ADMIN!");
+            new MainFrame(true).setVisible(true);
+            dispose();
+            return;
+        }
+
+        Account acc = accountRepository.dangNhap(user, pass);
+        if (acc != null) {
+            JOptionPane.showMessageDialog(this, "Xin chào " + acc.getHoTen() + "! Đăng nhập thành công.");
+            new MainFrame(false).setVisible(true);
+            dispose();
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Tài khoản hoặc mật khẩu không đúng!\n\nVui lòng đăng ký tài khoản nếu chưa có.",
+                    "Lỗi Đăng Nhập",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new LoginFrame().setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
     }
 }

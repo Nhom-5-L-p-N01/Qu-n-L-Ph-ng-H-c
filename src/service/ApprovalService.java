@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class ApprovalService {
 
     private final RoomRepository roomRepository;
@@ -31,17 +30,15 @@ public class ApprovalService {
         this.bookingService = new BookingService(roomRepository, bookingRepository);
     }
 
-    
     public Booking guiYeuCau(Student student, String maPhong, LocalDate ngay,
                              TimeSlot slot, int soNguoi)
             throws RoomNotFoundException, RoomUnderMaintenanceException,
             TimeConflictException, OverCapacityException,
             ExceedDailyHourLimitException, IOException {
 
-       
+        
         Booking b = bookingService.datPhong(student, maPhong, ngay, slot, soNguoi);
 
-       
         List<Booking> ds = bookingRepository.layTatCa(roomRepository);
         for (Booking x : ds) {
             if (x.getMaDatPhong().equals(b.getMaDatPhong())) {
@@ -82,7 +79,6 @@ public class ApprovalService {
                     "Phong " + target.getRoom().getMaPhong() + " dang bao tri, khong the duyet");
         }
 
-    
         for (Booking b : ds) {
             if (b == target) continue;
             if (b.getRoom().getMaPhong().equals(target.getRoom().getMaPhong())

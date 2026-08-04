@@ -16,23 +16,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Màn hình chính: quản lý đặt phòng học, duyệt/check-in, điểm & voucher,
- * thống kê (Admin).
- */
 public class MainFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
-    private JTextField txtUser, txtSearch, txtVoucher;
+    private JTextField txtSearch, txtVoucher;
     private JComboBox<String> cbRoom, cbTime;
     private JTable table;
     private DefaultTableModel tableModel;
     private TableRowSorter<DefaultTableModel> sorter;
     private final String FILE_PATH = "data_booking.txt";
-    private boolean isAdmin = false;
+
+    private final Account account;
+    private final boolean isAdmin;
 
     private UITheme.StatCard cardTotal, cardPending, cardApproved, cardDone;
     private JLabel lblMoTaPhong;
+    private JLabel lblAnhPhong;
 
     private final PointsManager pointsManager = new PointsManager();
     private final VoucherManager voucherManager = new VoucherManager();
@@ -71,26 +70,36 @@ public class MainFrame extends JFrame {
         put("Hội trường A", "Sức chứa lớn, dùng cho hội thảo, thuyết trình, sự kiện");
     }};
 
+    // Ten file anh minh hoa tuong ung tung phong - dat trong thu muc goc
+    private final Map<String, String> ROOM_IMAGE = new LinkedHashMap<String, String>() {{
+        put("P.101 (Thường)", "room_thuong.jpg");
+        put("P.102 (Thường)", "room_thuong.jpg");
+        put("P.201 (Sáng tạo)", "room_sangtao.jpg");
+        put("P.202 (Sáng tạo)", "room_sangtao.jpg");
+        put("P.301 (Công nghệ)", "room_congnghe.jpg");
+        put("P.401 (Nhóm nhỏ)", "room_nhomnho.jpg");
+        put("P.402 (Nhóm nhỏ)", "room_nhomnho.jpg");
+        put("Hội trường A", "room_hoitruong.jpg");
+    }};
+
     private static final String TT_CHO_DUYET = "Chờ duyệt";
     private static final String TT_DA_DUYET = "Đã duyệt";
     private static final String TT_DA_CHECKIN = "Đã check-in";
 
-    public MainFrame(boolean isAdmin) {
+    public MainFrame(Account account, boolean isAdmin) {
+        this.account = account;
         this.isAdmin = isAdmin;
         initUI();
         loadDataFromFile();
     }
 
-    public MainFrame() {
-        this(false);
-    }
-
     // ============================== GIAO DIỆN ==============================
 
     private void initUI() {
-        setTitle("Hệ thống quản lý đặt phòng học — " + (isAdmin ? "Quyền Admin" : "Quyền User"));
-        setSize(980, 760);
-        setMinimumSize(new Dimension(860, 620));
+        setTitle("Hệ thống quản lý đặt phòng học — " + (isAdmin ? "Quyền Admin" : "Quyền User")
+                + " — " + account.getHoTen());
+        setSize(980, 800);
+        setMinimumSize(new Dimension(860, 660));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -152,8 +161,10 @@ public class MainFrame extends JFrame {
         inputPanel.add(cbRoom);
 
         inputPanel.add(UITheme.fieldLabel("Người đặt", IconFactory.of(IconFactory.Type.USER, UITheme.PRIMARY, 15)));
-        txtUser = UITheme.roundedTextField();
-        inputPanel.add(txtUser);
+        JLabel lblNguoiDat = new JLabel(account.getHoTen() + "  (" + account.getEmail() + ")");
+        lblNguoiDat.setFont(UITheme.FONT_LABEL);
+        lblNguoiDat.setForeground(UITheme.WHITE);
+        inputPanel.add(lblNguoiDat);
 
         inputPanel.add(UITheme.fieldLabel("Khung giờ", IconFactory.of(IconFactory.Type.CLOCK, UITheme.PRIMARY, 15)));
         cbTime = new JComboBox<>(TIME_LIST);
@@ -172,6 +183,16 @@ public class MainFrame extends JFrame {
         lblMoTaPhong.setBorder(BorderFactory.createEmptyBorder(8, 4, 0, 0));
         topArea.add(lblMoTaPhong);
 
+        // Khung anh minh hoa phong dang chon
+        lblAnhPhong = new JLabel();
+        lblAnhPhong.setHorizontalAlignment(JLabel.CENTER);
+        lblAnhPhong.setBorder(BorderFactory.createCompoundBorder(
+                new UITheme.RoundedLineBorder(UITheme.PRIMARY, 12, 1.2f),
+                BorderFactory.createEmptyBorder(4, 4, 4, 4)));
+        lblAnhPhong.setPreferredSize(new Dimension(0, 160));
+        topArea.add(Box.createVerticalStrut(8));
+        topArea.add(lblAnhPhong);
+
         txtSearch.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { filterTable(); }
             public void removeUpdate(DocumentEvent e) { filterTable(); }
@@ -182,7 +203,7 @@ public class MainFrame extends JFrame {
     }
 
     private JScrollPane buildTablePanel() {
-        String[] columnNames = {"Tên Phòng", "Người Đặt", "Thời Gian", "Phí", "Trạng Thái"};
+        String[] columnNames = {"Tên Phòng", "Người Đặt (email)", "Thời Gian", "Phí", "Trạng Thái"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             private static final long serialVersionUID = 1L;
 
@@ -315,24 +336,42 @@ public class MainFrame extends JFrame {
         int phi = ROOM_FEE.getOrDefault(room, 0);
         String moTa = ROOM_DESC.getOrDefault(room, "");
         lblMoTaPhong.setText("<html>" + moTa + " — <b>Giá: " + formatTien(phi) + "đ</b></html>");
+
+        String tenAnh = ROOM_IMAGE.getOrDefault(room, "");
+        ImageIcon icon = taiAnhPhong(tenAnh, 500, 150);
+        lblAnhPhong.setIcon(icon);
+        lblAnhPhong.setText(icon == null ? "Chưa có ảnh minh họa cho phòng này" : "");
+        lblAnhPhong.setForeground(UITheme.TEXT_MUTED);
+    }
+
+    // Tai anh minh hoa phong tu file, tu dong scale vua khung.
+    // Tra ve null neu khong tim thay file (khong lam crash chuong trinh).
+    private ImageIcon taiAnhPhong(String tenFile, int w, int h) {
+        if (tenFile == null || tenFile.isEmpty()) return null;
+        try {
+            File f = new File(tenFile);
+            if (!f.exists()) return null;
+            Image img = javax.imageio.ImageIO.read(f);
+            if (img == null) return null;
+            Image scaled = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+            return new ImageIcon(scaled);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void onDatPhong() {
         String room = (String) cbRoom.getSelectedItem();
-        String user = txtUser.getText().trim();
         String time = (String) cbTime.getSelectedItem();
         String maVoucher = txtVoucher.getText().trim();
 
-        if (user.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập tên người đặt!");
-            return;
-        }
+        String nguoiDat = account.getEmail();
 
         int phiGoc = ROOM_FEE.getOrDefault(room, 30000);
         int phiThucTra = phiGoc;
 
         if (!maVoucher.isEmpty()) {
-            VoucherManager.Voucher v = voucherManager.timVoucherHopLe(maVoucher, user);
+            VoucherManager.Voucher v = voucherManager.timVoucherHopLe(maVoucher, nguoiDat);
             if (v == null) {
                 JOptionPane.showMessageDialog(this,
                         "Mã voucher không hợp lệ, không phải của bạn, hoặc đã được sử dụng!",
@@ -347,35 +386,47 @@ public class MainFrame extends JFrame {
                             + "đ => Còn phải trả: " + formatTien(phiThucTra) + "đ");
         }
 
-        tableModel.addRow(new Object[]{room, user, time, phiThucTra, TT_CHO_DUYET});
+        tableModel.addRow(new Object[]{room, nguoiDat, time, phiThucTra, TT_CHO_DUYET});
         saveDataToFile();
         updateStats();
-        txtUser.setText("");
         txtVoucher.setText("");
         JOptionPane.showMessageDialog(this, "Đã gửi yêu cầu đặt phòng! Phí: " + formatTien(phiThucTra) + "đ");
     }
 
     private void onHuyLich() {
         int viewRow = table.getSelectedRow();
-        if (viewRow >= 0) {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "Bạn có chắc chắn muốn hủy lịch đặt phòng này không?",
-                    "Xác nhận hủy lịch",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE);
-            if (confirm == JOptionPane.YES_OPTION) {
-                int modelRow = table.convertRowIndexToModel(viewRow);
-                tableModel.removeRow(modelRow);
-                saveDataToFile();
-                updateStats();
-                JOptionPane.showMessageDialog(this, "Đã hủy lịch thành công!");
-            }
-        } else {
+        if (viewRow < 0) {
             JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 dòng trong bảng để hủy!");
+            return;
+        }
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        String chuSoHuu = String.valueOf(tableModel.getValueAt(modelRow, 1));
+
+        if (!isAdmin && !chuSoHuu.equalsIgnoreCase(account.getEmail())) {
+            JOptionPane.showMessageDialog(this,
+                    "Bạn chỉ có thể hủy lịch đặt phòng của chính mình!",
+                    "Không có quyền", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "Bạn có chắc chắn muốn hủy lịch đặt phòng này không?",
+                "Xác nhận hủy lịch",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        if (confirm == JOptionPane.YES_OPTION) {
+            tableModel.removeRow(modelRow);
+            saveDataToFile();
+            updateStats();
+            JOptionPane.showMessageDialog(this, "Đã hủy lịch thành công!");
         }
     }
 
     private void onDuyet() {
+        if (!isAdmin) {
+            JOptionPane.showMessageDialog(this, "Chỉ Admin mới được duyệt lịch đặt phòng!", "Không có quyền", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         int viewRow = table.getSelectedRow();
         if (viewRow >= 0) {
             int modelRow = table.convertRowIndexToModel(viewRow);
@@ -400,6 +451,15 @@ public class MainFrame extends JFrame {
             return;
         }
         int modelRow = table.convertRowIndexToModel(viewRow);
+        String chuSoHuu = String.valueOf(tableModel.getValueAt(modelRow, 1));
+
+        if (!isAdmin && !chuSoHuu.equalsIgnoreCase(account.getEmail())) {
+            JOptionPane.showMessageDialog(this,
+                    "Bạn chỉ có thể check-in lịch đặt phòng của chính mình!",
+                    "Không có quyền", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         String trangThaiHienTai = String.valueOf(tableModel.getValueAt(modelRow, 4));
 
         if (trangThaiHienTai.equals(TT_DA_CHECKIN)) {
@@ -413,30 +473,23 @@ public class MainFrame extends JFrame {
             return;
         }
 
-        String tenNguoiDat = String.valueOf(tableModel.getValueAt(modelRow, 1));
-        double phi = Double.parseDouble(String.valueOf(tableModel.getValueAt(modelRow, 3)));
-
         tableModel.setValueAt(TT_DA_CHECKIN, modelRow, 4);
-        int diemCong = pointsManager.congDiem(tenNguoiDat, phi);
+        double phi = Double.parseDouble(String.valueOf(tableModel.getValueAt(modelRow, 3)));
+        int diemCong = pointsManager.congDiem(chuSoHuu, phi);
         saveDataToFile();
         updateStats();
 
         JOptionPane.showMessageDialog(this,
-                "Check-in thành công cho " + tenNguoiDat + "!\n"
-                        + "Cộng " + diemCong + " điểm tích lũy (tổng hiện có: " + pointsManager.layDiem(tenNguoiDat) + " điểm).",
+                "Check-in thành công!\n"
+                        + "Cộng " + diemCong + " điểm tích lũy (tổng hiện có: " + pointsManager.layDiem(chuSoHuu) + " điểm).",
                 "Check-in thành công", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void onDoiVoucher() {
-        String tenMacDinh = txtUser.getText().trim();
-        String ten = JOptionPane.showInputDialog(this,
-                "Nhập tên người đặt (đúng như khi đặt phòng) để đổi điểm:", tenMacDinh);
-        if (ten == null || ten.trim().isEmpty()) return;
-        ten = ten.trim();
-
+        String ten = account.getEmail();
         int diemHienCo = pointsManager.layDiem(ten);
         String nhap = JOptionPane.showInputDialog(this,
-                "Bạn (" + ten + ") đang có " + diemHienCo + " điểm.\n"
+                "Bạn (" + account.getHoTen() + ") đang có " + diemHienCo + " điểm.\n"
                         + "Đổi tối thiểu " + VoucherManager.DIEM_TOI_THIEU + " điểm, theo bội số " + VoucherManager.BOI_SO_DOI + ".\n"
                         + "Tỉ lệ: 1 điểm = " + formatTien(VoucherManager.GIA_TRI_MOI_DIEM) + "đ giảm giá.\n\n"
                         + "Nhập số điểm muốn đổi:", "100");
@@ -479,13 +532,10 @@ public class MainFrame extends JFrame {
     }
 
     private void onXemDiemVaVoucher() {
-        String tenMacDinh = txtUser.getText().trim();
-        String ten = JOptionPane.showInputDialog(this, "Nhập tên người đặt để xem điểm & voucher:", tenMacDinh);
-        if (ten == null || ten.trim().isEmpty()) return;
-        ten = ten.trim();
+        String ten = account.getEmail();
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Điểm tích lũy của ").append(ten).append(": ").append(pointsManager.layDiem(ten)).append(" điểm\n\n");
+        sb.append("Điểm tích lũy của ").append(account.getHoTen()).append(": ").append(pointsManager.layDiem(ten)).append(" điểm\n\n");
         sb.append("Danh sách voucher:\n");
         List<VoucherManager.Voucher> ds = voucherManager.layVoucherCuaKhach(ten);
         if (ds.isEmpty()) {
@@ -669,9 +719,5 @@ public class MainFrame extends JFrame {
             e.printStackTrace();
         }
         updateStats();
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new MainFrame(true).setVisible(true));
     }
 }

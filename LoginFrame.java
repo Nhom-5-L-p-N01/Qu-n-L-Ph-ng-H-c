@@ -3,9 +3,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-/**
- * Màn hình đăng nhập hệ thống.
- */
 public class LoginFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -136,8 +133,9 @@ public class LoginFrame extends JFrame {
         String pass = new String(txtPassword.getPassword()).trim();
 
         if (user.equalsIgnoreCase(ADMIN_EMAIL) && pass.equals(ADMIN_PASSWORD)) {
+            Account adminAccount = new Account("Quản trị viên", ADMIN_EMAIL, "-", ADMIN_PASSWORD);
             JOptionPane.showMessageDialog(this, "Đăng nhập thành công với quyền ADMIN!");
-            new MainFrame(true).setVisible(true);
+            new MainFrame(adminAccount, true).setVisible(true);
             dispose();
             return;
         }
@@ -145,7 +143,7 @@ public class LoginFrame extends JFrame {
         Account acc = accountRepository.dangNhap(user, pass);
         if (acc != null) {
             JOptionPane.showMessageDialog(this, "Xin chào " + acc.getHoTen() + "! Đăng nhập thành công.");
-            new MainFrame(false).setVisible(true);
+            new MainFrame(acc, false).setVisible(true);
             dispose();
         } else {
             JOptionPane.showMessageDialog(this,

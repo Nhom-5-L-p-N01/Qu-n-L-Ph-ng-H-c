@@ -4,9 +4,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.regex.Pattern;
 
-/**
- * Màn hình đăng ký tài khoản mới.
- */
 public class RegisterFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -23,7 +20,7 @@ public class RegisterFrame extends JFrame {
 
     public RegisterFrame() {
         setTitle("Đăng ký tài khoản");
-        setSize(480, 620);
+        setSize(480, 680);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -66,7 +63,7 @@ public class RegisterFrame extends JFrame {
         UITheme.RoundedPanel card = new UITheme.RoundedPanel(
                 new GridLayout(5, 1, 0, 14), 20, UITheme.GLASS_PANEL, UITheme.PRIMARY);
         card.setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
-        card.setPreferredSize(new Dimension(370, 340));
+        card.setPreferredSize(new Dimension(380, 430));
 
         txtHoTen = UITheme.roundedTextField();
         txtEmail = UITheme.roundedTextField();

@@ -7,17 +7,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-/**
- * Bộ giao diện dùng chung cho toàn bộ ứng dụng: bảng màu, font chữ,
- * ảnh nền (nạp 1 lần, dùng lại cho mọi cửa sổ) và các thành phần UI
- * bo góc hiện đại (nút, ô nhập, panel kính mờ, thẻ thống kê).
- */
 public final class UITheme {
 
     private UITheme() {
     }
 
-    // ================= BẢNG MÀU =================
     public static final Color BG_DARK      = new Color(13, 18, 32);
     public static final Color PRIMARY      = new Color(56, 189, 248);
     public static final Color PRIMARY_DARK = new Color(14, 116, 144);
@@ -35,7 +29,6 @@ public final class UITheme {
     public static final Color TABLE_ROW_1    = new Color(15, 23, 42, 180);
     public static final Color TABLE_ROW_2    = new Color(30, 41, 59, 180);
 
-    // ================= FONT =================
     private static final String FONT_FAMILY = "Segoe UI";
 
     public static Font font(int style, int size) {
@@ -52,7 +45,6 @@ public final class UITheme {
     public static final Font FONT_STAT_CAPTION  = font(Font.PLAIN, 12);
     public static final Font FONT_LINK          = font(Font.PLAIN, 12);
 
-    // ================= ẢNH NỀN (nạp 1 lần, dùng chung mọi cửa sổ) =================
     private static Image cachedBackground;
     private static boolean triedLoadBackground = false;
 
@@ -82,7 +74,6 @@ public final class UITheme {
         return null;
     }
 
-    // ================= PANEL NỀN (ảnh nền + lớp phủ tối để chữ dễ đọc) =================
     public static class BackgroundPanel extends JPanel {
         private static final long serialVersionUID = 1L;
 
@@ -115,7 +106,6 @@ public final class UITheme {
         }
     }
 
-    // ================= PANEL BO GÓC KIỂU "KÍNH MỜ" =================
     public static class RoundedPanel extends JPanel {
         private static final long serialVersionUID = 1L;
         private final int radius;
@@ -146,7 +136,6 @@ public final class UITheme {
         }
     }
 
-    // ================= NÚT BO GÓC (đổi màu khi hover/nhấn, hỗ trợ icon) =================
     public static class RoundedButton extends JButton {
         private static final long serialVersionUID = 1L;
         private final Color base;
@@ -198,7 +187,6 @@ public final class UITheme {
         }
     }
 
-    // ================= VIỀN BO GÓC TỰ VẼ (giữ lại, dùng cho card/panel khác nếu cần) =================
     public static class RoundedLineBorder extends AbstractBorder {
         private static final long serialVersionUID = 1L;
         private final Color color;
@@ -227,7 +215,6 @@ public final class UITheme {
         }
     }
 
-    // ================= Ô NHẬP / COMBOBOX BO GÓC =================
     public static JTextField roundedTextField() {
         JTextField field = new JTextField();
         styleField(field);
@@ -240,8 +227,6 @@ public final class UITheme {
         return field;
     }
 
-    // Vien bo goc co san cua Swing + chieu cao co dinh 36px de chu
-    // khong bi cat khi nam trong panel co chieu cao gioi han.
     private static void styleField(JTextField field) {
         field.setFont(FONT_LABEL);
         field.setForeground(new Color(15, 23, 42));
@@ -271,7 +256,6 @@ public final class UITheme {
         return label;
     }
 
-    // ================= THẺ THỐNG KÊ (icon + số lớn + nhãn) =================
     public static class StatCard extends JPanel {
         private static final long serialVersionUID = 1L;
         private final JLabel lblNumber;

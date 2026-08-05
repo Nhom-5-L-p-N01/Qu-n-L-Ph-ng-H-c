@@ -35,13 +35,6 @@ import repository.BookingRepository;
 import repository.RoomRepository;
 import service.BookingService;
 
-/**
- * Man hinh chinh cua ung dung - da duoc noi truc tiep voi lop nghiep vu
- * BookingService va cac model/repository trong package src (khong con tu
- * luu du lieu CSV rieng nhu truoc). Moi thao tac dat phong / huy lich /
- * check-in deu di qua BookingService de dam bao cac business rule bat buoc
- * (trung lich, vuot suc chua, qua 4 gio/ngay, phong bao tri...) duoc ap dung.
- */
 public class MainFrame extends JFrame {
     private static final long serialVersionUID = 1L;
 
@@ -58,9 +51,6 @@ public class MainFrame extends JFrame {
     private final BookingRepository bookingRepository = new BookingRepository("data_booking.txt");
     private final BookingService bookingService = new BookingService(roomRepository, bookingRepository);
 
-    // Danh sach lich dat hien dang hien thi tren bang, dong bo voi tableModel
-    // theo tung dong (dung de lay lai doi tuong Booking that khi nguoi dung
-    // chon 1 dong, thay vi phai parse chuoi tu bang).
     private List<Booking> danhSachDatHienTai = new ArrayList<>();
     private final Map<String, Room> roomByLabel = new LinkedHashMap<>();
 
@@ -205,7 +195,6 @@ public class MainFrame extends JFrame {
         lblMoTaPhong.setBorder(BorderFactory.createEmptyBorder(8, 4, 0, 0));
         topArea.add(lblMoTaPhong);
 
-        // Khung anh minh hoa phong dang chon
         lblAnhPhong = new JLabel();
         lblAnhPhong.setHorizontalAlignment(JLabel.CENTER);
         lblAnhPhong.setBorder(BorderFactory.createCompoundBorder(
@@ -424,8 +413,6 @@ public class MainFrame extends JFrame {
         lblAnhPhong.setForeground(UITheme.TEXT_MUTED);
     }
 
-    // Tai anh minh hoa phong tu file, tu dong scale vua khung.
-    // Tra ve null neu khong tim thay file (khong lam crash chuong trinh).
     private ImageIcon taiAnhPhong(String tenFile, int w, int h) {
         if (tenFile == null || tenFile.isEmpty()) return null;
         try {
@@ -849,8 +836,6 @@ public class MainFrame extends JFrame {
         cardHuy.setValue(String.valueOf(daHuy));
     }
 
-    // ============================== TRÌNH VẼ BẢNG ==============================
-
     private class StatusRowRenderer extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
 
@@ -886,8 +871,6 @@ public class MainFrame extends JFrame {
             return c;
         }
     }
-
-    // ============================== NẠP DỮ LIỆU TỪ BOOKINGSERVICE ==============================
 
     private void refreshTableFromService() {
         try {

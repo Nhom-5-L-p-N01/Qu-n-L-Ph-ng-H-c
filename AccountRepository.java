@@ -46,6 +46,13 @@ public class AccountRepository {
         return false;
     }
 
+    public boolean maSVDaTonTai(String maSV) {
+        for (Account acc : layTatCa()) {
+            if (acc.getMaSV() != null && acc.getMaSV().equalsIgnoreCase(maSV)) return true;
+        }
+        return false;
+    }
+
     public boolean them(Account acc) {
         if (emailDaTonTai(acc.getEmail())) return false;
         List<Account> ds = layTatCa();

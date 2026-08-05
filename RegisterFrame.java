@@ -10,6 +10,8 @@ public class RegisterFrame extends JFrame {
     private JTextField txtHoTen;
     private JTextField txtEmail;
     private JTextField txtSdt;
+    private JTextField txtMaSV;
+    private JTextField txtLop;
     private JPasswordField txtMatKhau;
     private JPasswordField txtXacNhanMatKhau;
 
@@ -20,7 +22,7 @@ public class RegisterFrame extends JFrame {
 
     public RegisterFrame() {
         setTitle("Đăng ký tài khoản");
-        setSize(480, 680);
+        setSize(480, 800);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -61,19 +63,23 @@ public class RegisterFrame extends JFrame {
 
     private JPanel buildFormCard() {
         UITheme.RoundedPanel card = new UITheme.RoundedPanel(
-                new GridLayout(5, 1, 0, 14), 20, UITheme.GLASS_PANEL, UITheme.PRIMARY);
-        card.setBorder(BorderFactory.createEmptyBorder(24, 28, 24, 28));
-        card.setPreferredSize(new Dimension(380, 430));
+                new GridLayout(7, 1, 0, 12), 20, UITheme.GLASS_PANEL, UITheme.PRIMARY);
+        card.setBorder(BorderFactory.createEmptyBorder(22, 28, 22, 28));
+        card.setPreferredSize(new Dimension(380, 560));
 
         txtHoTen = UITheme.roundedTextField();
         txtEmail = UITheme.roundedTextField();
         txtSdt = UITheme.roundedTextField();
+        txtMaSV = UITheme.roundedTextField();
+        txtLop = UITheme.roundedTextField();
         txtMatKhau = UITheme.roundedPasswordField();
         txtXacNhanMatKhau = UITheme.roundedPasswordField();
 
         card.add(formRow("Họ và tên", IconFactory.Type.USER, txtHoTen));
         card.add(formRow("Email", IconFactory.Type.MAIL, txtEmail));
         card.add(formRow("Số điện thoại", IconFactory.Type.PHONE, txtSdt));
+        card.add(formRow("Mã sinh viên", IconFactory.Type.ADD_USER, txtMaSV));
+        card.add(formRow("Lớp", IconFactory.Type.ROOM, txtLop));
         card.add(formRow("Mật khẩu", IconFactory.Type.LOCK, txtMatKhau));
         card.add(formRow("Xác nhận mật khẩu", IconFactory.Type.LOCK, txtXacNhanMatKhau));
 
@@ -120,10 +126,13 @@ public class RegisterFrame extends JFrame {
         String hoTen = txtHoTen.getText().trim();
         String email = txtEmail.getText().trim();
         String sdt = txtSdt.getText().trim();
+        String maSV = txtMaSV.getText().trim();
+        String lop = txtLop.getText().trim();
         String matKhau = new String(txtMatKhau.getPassword()).trim();
         String xacNhan = new String(txtXacNhanMatKhau.getPassword()).trim();
 
-        if (hoTen.isEmpty() || email.isEmpty() || sdt.isEmpty() || matKhau.isEmpty()) {
+        if (hoTen.isEmpty() || email.isEmpty() || sdt.isEmpty()
+                || maSV.isEmpty() || lop.isEmpty() || matKhau.isEmpty()) {
             baoLoi("Vui lòng điền đầy đủ thông tin!");
             return;
         }
@@ -147,8 +156,12 @@ public class RegisterFrame extends JFrame {
             baoLoi("Email này đã được đăng ký!");
             return;
         }
+        if (accountRepository.maSVDaTonTai(maSV)) {
+            baoLoi("Mã sinh viên này đã được đăng ký!");
+            return;
+        }
 
-        Account acc = new Account(hoTen, email, sdt, matKhau);
+        Account acc = new Account(hoTen, email, sdt, matKhau, maSV, lop);
         boolean ok = accountRepository.them(acc);
 
         if (ok) {

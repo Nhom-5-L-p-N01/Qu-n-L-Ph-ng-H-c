@@ -132,8 +132,11 @@ public class BookingService {
     }
 
     // ===== HUY LICH (kiem tra quyen huy - slide 20) =====
+    // Ap dung du 3 dieu kien bat buoc trong de bai: ma dat phong khong ton tai,
+    // lich da bi huy truoc do, va sinh vien khong phai chu cua lich dat.
     public void huyPhong(String maDatPhong, String maSVYeuCau)
-            throws NotBookingOwnerException, IOException {
+            throws BookingNotFoundException, NotBookingOwnerException,
+            BookingAlreadyCancelledException, IOException {
         List<Booking> ds = bookingRepository.layTatCa(roomRepository);
         Booking target = null;
         for (Booking b : ds) {
@@ -142,10 +145,16 @@ public class BookingService {
                 break;
             }
         }
-        if (target == null) return; // khong tim thay, coi nhu khong co gi de huy
+        if (target == null) {
+            throw new BookingNotFoundException("Khong tim thay lich dat voi ma: " + maDatPhong);
+        }
 
         if (!target.getStudent().getMaSV().equals(maSVYeuCau)) {
             throw new NotBookingOwnerException("Ban khong phai chu cua lich dat nay");
+        }
+
+        if (target.getTrangThai() == BookingStatus.DA_HUY) {
+            throw new BookingAlreadyCancelledException("Lich dat nay da bi huy truoc do");
         }
 
         target.setTrangThai(BookingStatus.DA_HUY);

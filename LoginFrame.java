@@ -134,22 +134,34 @@ public class LoginFrame extends JFrame {
 
         if (user.equalsIgnoreCase(ADMIN_EMAIL) && pass.equals(ADMIN_PASSWORD)) {
             Account adminAccount = new Account("Quản trị viên", ADMIN_EMAIL, "-", ADMIN_PASSWORD, "ADMIN", "-");
-            JOptionPane.showMessageDialog(this, "Đăng nhập thành công với quyền ADMIN!");
-            new MainFrame(adminAccount, true).setVisible(true);
-            dispose();
+            moMainFrame(adminAccount, true);
             return;
         }
 
         Account acc = accountRepository.dangNhap(user, pass);
         if (acc != null) {
-            JOptionPane.showMessageDialog(this, "Xin chào " + acc.getHoTen() + "! Đăng nhập thành công.");
-            new MainFrame(acc, false).setVisible(true);
-            dispose();
+            moMainFrame(acc, false);
         } else {
             JOptionPane.showMessageDialog(this,
                     "Tài khoản hoặc mật khẩu không đúng!\n\nVui lòng đăng ký tài khoản nếu chưa có.",
                     "Lỗi Đăng Nhập",
                     JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    // Mo man hinh chinh, bat loi ro rang neu co su co (thay vi de cua so
+    // "dung im" kho hieu khi MainFrame khoi tao that bai vi ly do nao do).
+    private void moMainFrame(Account acc, boolean isAdmin) {
+        try {
+            MainFrame mf = new MainFrame(acc, isAdmin);
+            JOptionPane.showMessageDialog(this, "Đăng nhập thành công" + (isAdmin ? " với quyền ADMIN!" : "!"));
+            mf.setVisible(true);
+            dispose();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Có lỗi khi mở màn hình chính:\n" + ex,
+                    "Lỗi", JOptionPane.ERROR_MESSAGE);
         }
     }
 

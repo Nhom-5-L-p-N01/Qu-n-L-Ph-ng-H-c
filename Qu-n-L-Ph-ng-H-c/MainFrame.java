@@ -9,6 +9,8 @@ import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class MainFrame extends JFrame {
     private JTextField txtUser, txtSearch;
@@ -18,6 +20,36 @@ public class MainFrame extends JFrame {
     private TableRowSorter<DefaultTableModel> sorter;
     private final String FILE_PATH = "data_booking.txt";
     private boolean isAdmin = false;
+    private String currentUsername;
+    //===================== LAYOUT =====================
+
+    private CardLayout cardLayout;
+    private JPanel contentPanel;
+
+    private JPanel bookingPanel;
+    private DashboardPanel dashboardPanel;
+
+    private HistoryPanel historyPanel;
+    private JPanel profilePanel;
+    private JPanel statisticPanel;
+    private JPanel userPanel;
+
+//===================== HEADER =====================
+
+    private JLabel lblTitle;
+    private JLabel lblWelcome;
+    private JLabel lblClock;
+
+//===================== MENU =====================
+
+    private JButton btnDashboard;
+
+    private JButton btnBooking;
+    private JButton btnHistory;
+    private JButton btnProfile;
+    private JButton btnStatistic;
+    private JButton btnUser;
+    private JButton btnLogout;
 
     private JLabel lblStatTotal, lblStatPending, lblStatApproved;
 
@@ -59,14 +91,22 @@ public class MainFrame extends JFrame {
         }
     }
 
-    public MainFrame(boolean isAdmin) {
+    public MainFrame(boolean isAdmin, String currentUsername) {
+
         this.isAdmin = isAdmin;
+        this.currentUsername = currentUsername;
+        cardLayout = new CardLayout();
         initUI();
         loadDataFromFile();
+        updateStats();
+        updateDashboard();
+        updateHistory();
+        startClock();
+
     }
 
     public MainFrame() {
-        this(false);
+        this(false, "");
     }
 
     private void initUI() {
@@ -75,15 +115,11 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        ImageBackgroundPanel root = new ImageBackgroundPanel(new BorderLayout(10, 10));
+        ImageBackgroundPanel root = new ImageBackgroundPanel(new BorderLayout());
         setContentPane(root);
 
         // ---- Tiêu đề ----
-        JLabel lblTitle = new JLabel("QUẢN LÝ ĐẶT PHÒNG HỌC", JLabel.CENTER);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
-        lblTitle.setForeground(COLOR_WHITE);
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(15, 10, 10, 10));
-        root.add(lblTitle, BorderLayout.NORTH);
+        root.add(createHeader(), BorderLayout.NORTH);
 
         // ---- Panel giữa ----
         JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
@@ -100,7 +136,7 @@ public class MainFrame extends JFrame {
         searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         JLabel lblSearch = new JLabel("Tìm kiếm:");
         lblSearch.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        lblSearch.setForeground(COLOR_WHITE);
+        lblSearch.setForeground(Color.BLACK);
         searchPanel.add(lblSearch, BorderLayout.WEST);
         txtSearch = styledTextField();
         searchPanel.add(txtSearch, BorderLayout.CENTER);
@@ -123,6 +159,10 @@ public class MainFrame extends JFrame {
 
         inputPanel.add(styledLabel("Người đặt:"));
         txtUser = styledTextField();
+        if (!isAdmin) {
+            txtUser.setText(currentUsername);
+            txtUser.setEditable(false);
+        }
         inputPanel.add(txtUser);
 
         inputPanel.add(styledLabel("Khung giờ:"));
@@ -172,7 +212,38 @@ public class MainFrame extends JFrame {
         statsPanel.add(lblStatApproved);
         centerPanel.add(statsPanel, BorderLayout.SOUTH);
 
-        root.add(centerPanel, BorderLayout.CENTER);
+        contentPanel = new JPanel(cardLayout);
+
+        bookingPanel = centerPanel;
+        historyPanel = new HistoryPanel();
+
+        historyPanel.setCurrentUser(currentUsername);
+
+// Luôn thêm màn hình Đặt phòng
+        contentPanel.add(bookingPanel, "BOOKING");
+        contentPanel.add(historyPanel, "HISTORY");
+
+
+// Chỉ Admin mới có Dashboard
+        if (isAdmin) {
+
+            dashboardPanel = new DashboardPanel();
+
+            contentPanel.add(dashboardPanel, "DASHBOARD");
+
+            updateDashboard();
+            updateHistory();
+
+            cardLayout.show(contentPanel, "DASHBOARD");
+
+        } else {
+
+            cardLayout.show(contentPanel, "BOOKING");
+
+        }
+
+        root.add(contentPanel, BorderLayout.CENTER);
+        root.add(createSidebar(), BorderLayout.WEST);
 
         // ---- Thanh nút bấm ----
         JPanel buttonPanel = new JPanel(new FlowLayout());
@@ -205,7 +276,17 @@ public class MainFrame extends JFrame {
                 tableModel.addRow(new Object[]{room, user, time, "Chờ duyệt"});
                 saveDataToFile();
                 updateStats();
-                txtUser.setText("");
+                updateDashboard();
+                updateHistory();
+                if(isAdmin){
+
+                    txtUser.setText("");
+
+                }else{
+
+                    txtUser.setText(currentUsername);
+
+                }
                 JOptionPane.showMessageDialog(this, "Đã gửi yêu cầu đặt phòng!");
             }
         });
@@ -223,6 +304,8 @@ public class MainFrame extends JFrame {
                     tableModel.removeRow(modelRow);
                     saveDataToFile();
                     updateStats();
+                    updateDashboard();
+                    updateHistory();
                     JOptionPane.showMessageDialog(this, "Đã hủy lịch thành công!");
                 }
             } else {
@@ -237,6 +320,8 @@ public class MainFrame extends JFrame {
                 tableModel.setValueAt("Đã duyệt", modelRow, 3);
                 saveDataToFile();
                 updateStats();
+                updateDashboard();
+                updateHistory();
                 JOptionPane.showMessageDialog(this, "Đã duyệt lịch đặt phòng thành công!");
             } else {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn 1 lịch trong bảng để duyệt!");
@@ -336,7 +421,7 @@ public class MainFrame extends JFrame {
     private class StatusRowRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected,
-                                                         boolean hasFocus, int row, int column) {
+                                                       boolean hasFocus, int row, int column) {
             Component c = super.getTableCellRendererComponent(tbl, value, isSelected, hasFocus, row, column);
 
             if (!isSelected) {
@@ -367,9 +452,9 @@ public class MainFrame extends JFrame {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(FILE_PATH))) {
             for (int i = 0; i < tableModel.getRowCount(); i++) {
                 String line = tableModel.getValueAt(i, 0) + "," +
-                             tableModel.getValueAt(i, 1) + "," +
-                             tableModel.getValueAt(i, 2) + "," +
-                             tableModel.getValueAt(i, 3);
+                        tableModel.getValueAt(i, 1) + "," +
+                        tableModel.getValueAt(i, 2) + "," +
+                        tableModel.getValueAt(i, 3);
                 bw.write(line);
                 bw.newLine();
             }
@@ -399,8 +484,243 @@ public class MainFrame extends JFrame {
         }
         updateStats();
     }
+    private JPanel createHeader() {
+
+        JPanel panel = new JPanel(new BorderLayout());
+
+        panel.setPreferredSize(new Dimension(0,70));
+
+        panel.setBackground(new Color(15,25,45));
+
+        lblTitle = new JLabel("QUẢN LÝ PHÒNG HỌC");
+
+        lblTitle.setFont(new Font("Segoe UI",Font.BOLD,22));
+
+        lblTitle.setForeground(Color.WHITE);
+
+        lblTitle.setBorder(
+                BorderFactory.createEmptyBorder(
+                        0,20,0,0));
+
+        panel.add(lblTitle,BorderLayout.WEST);
+
+        JPanel right = new JPanel(
+                new GridLayout(2,1));
+
+        right.setOpaque(false);
+
+        lblWelcome = new JLabel(
+                isAdmin ?
+                        "Xin chào Admin"
+                        :
+                        "Xin chào Sinh viên");
+
+        lblWelcome.setForeground(Color.WHITE);
+
+        lblClock = new JLabel();
+
+        lblClock.setForeground(Color.WHITE);
+
+        right.add(lblWelcome);
+
+        right.add(lblClock);
+
+        panel.add(right,BorderLayout.EAST);
+
+        return panel;
+
+    }
+    private void startClock() {
+
+        Timer timer = new Timer(1000, e -> {
+
+            LocalDateTime now = LocalDateTime.now();
+
+            DateTimeFormatter formatter =
+                    DateTimeFormatter.ofPattern(
+                            "dd/MM/yyyy HH:mm:ss");
+
+            lblClock.setText(
+                    now.format(formatter));
+
+        });
+
+        timer.start();
+
+    }
+    private JPanel createSidebar() {
+
+        JPanel sidebar = new JPanel();
+
+        sidebar.setPreferredSize(new Dimension(220,0));
+
+        sidebar.setBackground(new Color(15,25,45));
+
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+
+        sidebar.setBorder(BorderFactory.createEmptyBorder(20,10,20,10));
+
+        if (isAdmin) {
+
+            btnDashboard = createMenuButton("Dashboard");
+
+            btnDashboard.setIcon(
+                    UIManager.getIcon("FileView.directoryIcon"));
+
+            btnDashboard.addActionListener(e -> {
+
+                cardLayout.show(contentPanel, "DASHBOARD");
+
+            });
+
+        }
+
+
+
+        btnBooking = createMenuButton("Đặt phòng");
+        btnBooking.setIcon(UIManager.getIcon("FileChooser.newFolderIcon"));
+        btnBooking.addActionListener(e -> {
+            cardLayout.show(contentPanel, "BOOKING");
+        });
+
+//===================== HISTORY =====================
+
+        btnHistory = createMenuButton("Lịch sử");
+        btnHistory.setIcon(UIManager.getIcon("FileView.fileIcon"));
+
+        btnHistory.addActionListener(e -> {
+            cardLayout.show(contentPanel, "HISTORY");
+        });
+
+        if (isAdmin) {
+
+            btnUser = createMenuButton("Sinh viên");
+
+            btnUser.setIcon(
+                    UIManager.getIcon("FileChooser.detailsViewIcon"));
+
+        }
+
+        btnProfile = createMenuButton("Hồ sơ");
+        btnProfile.setIcon(UIManager.getIcon("FileChooser.homeFolderIcon"));
+
+        if (isAdmin) {
+
+            btnStatistic = createMenuButton("Thống kê");
+
+            btnStatistic.setIcon(
+                    UIManager.getIcon("Tree.closedIcon"));
+
+        }
+
+        btnLogout = createMenuButton("Đăng xuất");
+        btnLogout.setIcon(UIManager.getIcon("InternalFrame.closeIcon"));
+
+        if(isAdmin){
+            sidebar.add(btnDashboard);
+        }
+
+        sidebar.add(btnBooking);
+
+        sidebar.add(btnHistory);
+
+        if(isAdmin){
+            sidebar.add(btnUser);
+        }
+
+        sidebar.add(btnProfile);
+
+        if(isAdmin){
+            sidebar.add(btnStatistic);
+        }
+
+        sidebar.add(Box.createVerticalGlue());
+
+        sidebar.add(btnLogout);
+        System.out.println(UIManager.getIcon("FileView.directoryIcon"));
+
+        return sidebar;
+    }
+    private JButton createMenuButton(String text) {
+
+        JButton btn = new JButton(text);
+
+        btn.setIconTextGap(12);
+
+        btn.setMaximumSize(new Dimension(200,45));
+
+        btn.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+
+        btn.setBackground(new Color(15,25,45));
+
+        btn.setForeground(Color.WHITE);
+
+        btn.setFont(new Font("Segoe UI",Font.BOLD,15));
+
+        btn.setFocusPainted(false);
+
+        btn.setBorder(BorderFactory.createEmptyBorder(10,20,10,10));
+
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        return btn;
+    }
+    private void updateDashboard() {
+
+        if (!isAdmin || dashboardPanel == null) {
+            return;
+        }
+
+        int totalRoom = ROOM_LIST.length;
+
+        int totalBooking = tableModel.getRowCount();
+
+        int pending = 0;
+
+        int approved = 0;
+
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+
+            String status = tableModel.getValueAt(i,3).toString();
+
+            if(status.equals("Chờ duyệt")){
+
+                pending++;
+
+            }else if(status.equals("Đã duyệt")){
+
+                approved++;
+
+            }
+
+        }
+
+        dashboardPanel.updateDashboard(
+                totalRoom,
+                totalBooking,
+                pending,
+                approved);
+        dashboardPanel.updateRecentBooking(tableModel);
+
+    }
+    private void updateHistory(){
+
+        if(historyPanel!=null){
+
+            historyPanel.loadHistory(
+                    tableModel,
+                    isAdmin
+            );
+
+        }
+
+    }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new MainFrame(true).setVisible(true));
+        SwingUtilities.invokeLater(() ->
+                new MainFrame(true, "admin").setVisible(true));
     }
+
 }

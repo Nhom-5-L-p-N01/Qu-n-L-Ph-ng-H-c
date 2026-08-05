@@ -109,11 +109,11 @@ public class LoginFrame extends JFrame {
 
                 if (user.equals("admin") && pass.equals("123")) {
                     JOptionPane.showMessageDialog(LoginFrame.this, "Đăng nhập thành công với quyền ADMIN!");
-                    new MainFrame(true).setVisible(true);
+                    new MainFrame(true, user).setVisible(true);
                     dispose();
                 } else if (user.equals("user") && pass.equals("123")) {
                     JOptionPane.showMessageDialog(LoginFrame.this, "Đăng nhập thành công với quyền USER!");
-                    new MainFrame(false).setVisible(true);
+                    new MainFrame(false, user).setVisible(true);;
                     dispose();
                 } else {
                     JOptionPane.showMessageDialog(LoginFrame.this,

@@ -428,35 +428,16 @@ public class MainFrame extends JFrame {
     // Tra ve null neu khong tim thay file (khong lam crash chuong trinh).
     private ImageIcon taiAnhPhong(String tenFile, int w, int h) {
         if (tenFile == null || tenFile.isEmpty()) return null;
-        Image img = null;
-
-        // Cách 1: tìm file trực tiếp theo đường dẫn tương đối với thư mục làm việc
-        // hiện tại (đúng khi chạy trực tiếp từ thư mục project).
         try {
             File f = new File(tenFile);
-            if (f.exists()) {
-                img = javax.imageio.ImageIO.read(f);
-            }
-        } catch (Exception ignored) {
+            if (!f.exists()) return null;
+            Image img = javax.imageio.ImageIO.read(f);
+            if (img == null) return null;
+            Image scaled = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
+            return new ImageIcon(scaled);
+        } catch (Exception e) {
+            return null;
         }
-
-        // Cách 2 (dự phòng): tìm trong classpath - trường hợp IDE (VS Code/IntelliJ)
-        // chạy chương trình với thư mục làm việc khác thư mục chứa ảnh (ví dụ chạy
-        // từ thư mục "out"/"bin" sau khi biên dịch). Đây chính là cách background.jpg
-        // đang dùng để luôn hiển thị được, nên áp dụng y hệt cho ảnh phòng.
-        if (img == null) {
-            try {
-                java.net.URL url = getClass().getClassLoader().getResource(tenFile);
-                if (url != null) {
-                    img = javax.imageio.ImageIO.read(url);
-                }
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (img == null) return null;
-        Image scaled = img.getScaledInstance(w, h, Image.SCALE_SMOOTH);
-        return new ImageIcon(scaled);
     }
 
     private void onDatPhong() {
@@ -914,15 +895,6 @@ public class MainFrame extends JFrame {
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(this, "Không thể đọc dữ liệu đặt phòng: " + ex.getMessage(),
                     "Lỗi đọc file", JOptionPane.ERROR_MESSAGE);
-            danhSachDatHienTai = new ArrayList<>();
-        } catch (RuntimeException ex) {
-            // Phòng trường hợp file dữ liệu bị hỏng/sai định dạng theo cách chưa lường
-            // trước - báo lỗi rõ ràng cho người dùng thay vì để cả cửa sổ crash âm thầm.
-            JOptionPane.showMessageDialog(this,
-                    "Dữ liệu đặt phòng (data_booking.txt) có định dạng không hợp lệ, có thể là" +
-                            " file cũ từ phiên bản trước.\nHãy xóa file data_booking.txt rồi mở lại ứng dụng.\n\n"
-                            + "Chi tiết lỗi: " + ex,
-                    "Lỗi dữ liệu", JOptionPane.ERROR_MESSAGE);
             danhSachDatHienTai = new ArrayList<>();
         }
 

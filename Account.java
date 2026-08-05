@@ -43,7 +43,15 @@ public class Account {
 
     public static Account fromLine(String line) {
         String[] p = line.split("\\|", -1);
-        if (p.length < 6) return null;
-        return new Account(p[0], p[1], p[2], p[3], p[4], p[5]);
+        if (p.length >= 6) {
+            return new Account(p[0], p[1], p[2], p[3], p[4], p[5]);
+        }
+        if (p.length == 4) {
+            // Du lieu tai khoan tao truoc khi co them truong Ma sinh vien/Lop.
+            // Van cho dang nhap duoc binh thuong; dung email lam ma SV tam thoi
+            // de moi tai khoan cu van co 1 dinh danh rieng biet (khong bi trung "").
+            return new Account(p[0], p[1], p[2], p[3], p[1], "");
+        }
+        return null;
     }
 }

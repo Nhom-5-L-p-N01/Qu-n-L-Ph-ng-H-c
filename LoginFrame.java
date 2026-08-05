@@ -133,7 +133,7 @@ public class LoginFrame extends JFrame {
         String pass = new String(txtPassword.getPassword()).trim();
 
         if (user.equalsIgnoreCase(ADMIN_EMAIL) && pass.equals(ADMIN_PASSWORD)) {
-            Account adminAccount = new Account("Quản trị viên", ADMIN_EMAIL, "-", ADMIN_PASSWORD);
+            Account adminAccount = new Account("Quản trị viên", ADMIN_EMAIL, "-", ADMIN_PASSWORD, "ADMIN", "-");
             JOptionPane.showMessageDialog(this, "Đăng nhập thành công với quyền ADMIN!");
             new MainFrame(adminAccount, true).setVisible(true);
             dispose();
